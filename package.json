@@ -1,0 +1,33 @@
+{
+  "name": "com.prototir.sdk",
+  "version": "0.1.0",
+  "displayName": "Prototir SDK",
+  "description": "Unity 6 Web adapter for the Prototir protocol: readiness, events, scores, storage, and managed AI.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://prototir.com/docs/creators?runtime=unity#setup",
+  "changelogUrl": "https://github.com/prototir/unity-sdk/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/prototir/unity-sdk/blob/main/LICENSE.md",
+  "keywords": [
+    "prototir",
+    "web",
+    "prototype",
+    "sdk"
+  ],
+  "author": {
+    "name": "Prototir",
+    "url": "https://prototir.com"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Integration",
+      "description": "Ready, event, score, storage, and managed AI integration.",
+      "path": "Samples~/BasicIntegration"
+    },
+    {
+      "displayName": "Prototir Manifest Example",
+      "description": "Portable prototir.json example for customizing Unity prototype metadata.",
+      "path": "Samples~/PrototirWebTemplate"
+    }
+  ]
+}

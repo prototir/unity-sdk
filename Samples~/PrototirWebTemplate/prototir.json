@@ -1,0 +1,12 @@
+{
+  "name": "Unity Web prototype",
+  "type": "game",
+  "entry": "index.html",
+  "devices": ["desktop", "mobile"],
+  "orientation": "any",
+  "runtime": {
+    "engine": "unity",
+    "engineVersion": "6000.0",
+    "profile": "standard"
+  }
+}

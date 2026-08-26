@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #111216; }
+      body { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+      #unity-canvas { display: block; width: 100%; height: 100%; background: #111216; outline: 0; }
+      #prototir-loader { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; background: #111216; transition: opacity 180ms ease; }
+      #prototir-loader[hidden] { display: none; }
+      #prototir-progress { width: min(18rem, 58vw); height: .3rem; overflow: hidden; border-radius: 999px; background: #2b2e36; }
+      #prototir-progress-fill { width: 0; height: 100%; border-radius: inherit; background: #5da1ff; transition: width 100ms linear; }
+      #prototir-message { position: fixed; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom)); translate: -50% 0; max-width: min(40rem, calc(100% - 2rem)); padding: .75rem 1rem; border: 1px solid #535866; border-radius: .65rem; background: #1d2027; color: #f5f7fb; font: 500 .875rem/1.45 system-ui, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="-1"></canvas>
+    <div id="prototir-loader" role="status" aria-label="Loading {{{ PRODUCT_NAME }}}">
+      <div id="prototir-progress"><div id="prototir-progress-fill"></div></div>
+    </div>
+    <script>
+      const canvas = document.querySelector("#unity-canvas");
+      const loader = document.querySelector("#prototir-loader");
+      const progress = document.querySelector("#prototir-progress-fill");
+      const config = {
+        arguments: [],
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        showBanner(message, type) {
+          const previous = document.querySelector("#prototir-message");
+          if (previous) previous.remove();
+          if (!message) return;
+          const banner = document.createElement("div");
+          banner.id = "prototir-message";
+          banner.textContent = message;
+          banner.dataset.type = type || "warning";
+          document.body.appendChild(banner);
+          if (type !== "error") setTimeout(() => banner.remove(), 5000);
+        },
+      };
+
+      const script = document.createElement("script");
+      script.src = "Build/{{{ LOADER_FILENAME }}}";
+      script.onload = () => {
+        createUnityInstance(canvas, config, value => {
+          progress.style.width = `${Math.round(value * 100)}%`;
+        }).then(() => {
+          loader.hidden = true;
+          canvas.focus({ preventScroll: true });
+        }).catch(message => {
+          config.showBanner(String(message), "error");
+        });
+      };
+      script.onerror = () => config.showBanner("The Unity loader could not be opened.", "error");
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
