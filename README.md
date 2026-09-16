@@ -80,6 +80,32 @@ in memory, readiness/events/scores are exposed as mock events, and managed AI re
 `PrototirSdk.MockAiHandler`. This keeps local tests deterministic and prevents accidental service
 requests.
 
+## Screenshot feedback
+
+Add a `PrototirReview` component to a scene to give testers a floating feedback button in Web
+builds. They capture the current view, drop a pin on that screenshot and write a comment.
+
+| Field | Meaning |
+| --- | --- |
+| `ProjectId` | Stable identifier. Reviews exported from another project are refused on import. |
+| `BuildId` | Recorded with the feedback so you know which build a screenshot came from. |
+| `Corner` | `bottom-left` (default), `bottom-right`, `top-left`, or `top-right`. |
+| `PauseWhileReviewing` | Sets `Time.timeScale` to zero while the panel is open. |
+| `ReviewVisibilityChanged` | Fires with `true`/`false` so you can pause audio or your own input. |
+
+Screenshots are taken with `ScreenCapture.CaptureScreenshotAsTexture` after `WaitForEndOfFrame`, so
+they match what the player saw. While the panel is open the component clears
+`WebGLInput.captureAllKeyboardInput`, otherwise the game would swallow the tester's typing.
+
+The component is inert outside Web builds and in the Editor. There is nothing to remove for a native
+build, but testers will not see the button there.
+
+On Prototir the feedback becomes an ordinary comment on the prototype, after Prototir's own
+confirmation dialog. In a Web build you host yourself the panel saves a
+`feedback.prototir-review.json` file that the tester sends you and you reload with **Import review**.
+See the [Web SDK README](https://github.com/prototir/web-sdk#screenshot-feedback) for the file format
+and its limits.
+
 ## Documentation and examples
 
 - [Package documentation](Documentation~/index.md)

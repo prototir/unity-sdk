@@ -32,6 +32,13 @@ namespace Prototir.Editor
         {
             if (report.summary.platform != BuildTarget.WebGL) return;
             WriteManifest(report.summary.outputPath);
+            var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PrototirReview).Assembly);
+            var runtimePath = Path.Combine(package.resolvedPath, "Runtime", "Review", "prototir.js");
+            File.Copy(runtimePath, Path.Combine(report.summary.outputPath, "prototir-review.js"), true);
+            var entryPath = Path.Combine(report.summary.outputPath, "index.html");
+            var entry = File.ReadAllText(entryPath);
+            if (!entry.Contains("src=\"prototir-review.js\""))
+                File.WriteAllText(entryPath, entry.Replace("</head>", "<script src=\"prototir-review.js\"></script></head>"));
             ValidateExport(report.summary.outputPath);
         }
 
