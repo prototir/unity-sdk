@@ -16,6 +16,12 @@ namespace Prototir
         public string Launcher = "auto";
         [Tooltip("auto follows the player's light/dark preference.")]
         public string Theme = "auto";
+
+        [Header("Posting from outside Prototir")]
+        [Tooltip("Prototir API base URL. Set this and PrototypeSlug to let a build hosted elsewhere post feedback after the tester approves it in a browser. Leave empty to save review files instead.")]
+        public string ApiBase = "";
+        [Tooltip("The prototype these comments belong to, as it appears in its Prototir URL.")]
+        public string PrototypeSlug = "";
         public bool PauseWhileReviewing = true;
         public UnityEvent<bool> ReviewVisibilityChanged = new UnityEvent<bool>();
         private float previousTimeScale;
@@ -23,7 +29,7 @@ namespace Prototir
         private bool previousKeyboardCapture;
         private GameObject receiverObject;
 
-        [Serializable] private class Options { public string project; public string build; public string corner; public string launcher; public string theme; }
+        [Serializable] private class Options { public string project; public string build; public string corner; public string launcher; public string theme; public string apiBase; public string slug; }
         private void Start()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -31,7 +37,7 @@ namespace Prototir
             receiverObject = new GameObject("__PrototirReview_" + GetInstanceID());
             receiverObject.transform.SetParent(transform, false);
             receiverObject.AddComponent<PrototirReviewReceiver>().Owner = this;
-            Prototir_ReviewEnable(JsonUtility.ToJson(new Options { project = ProjectId, build = BuildId, corner = Corner, launcher = Launcher, theme = Theme }), receiverObject.name);
+            Prototir_ReviewEnable(JsonUtility.ToJson(new Options { project = ProjectId, build = BuildId, corner = Corner, launcher = Launcher, theme = Theme, apiBase = ApiBase, slug = PrototypeSlug }), receiverObject.name);
 #endif
         }
         public void OnReviewVisibility(string value)

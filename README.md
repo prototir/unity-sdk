@@ -92,6 +92,8 @@ builds. They capture the current view, drop a pin on that screenshot and write a
 | `Corner` | `bottom-left` (default), `bottom-right`, `top-left`, or `top-right`. |
 | `Launcher` | `auto` (default) lets Prototir draw the control on its own surfaces; `watermark` always shows the Prototir mark; `host` draws nothing. |
 | `Theme` | `auto` (default) follows the player's light/dark preference; `light` or `dark` pins it. |
+| `ApiBase` | Prototir API base URL. With `PrototypeSlug`, lets a build hosted outside Prototir post feedback. |
+| `PrototypeSlug` | The prototype these comments belong to, as it appears in its Prototir URL. |
 | `PauseWhileReviewing` | Sets `Time.timeScale` to zero while the panel is open. |
 | `ReviewVisibilityChanged` | Fires with `true`/`false` so you can pause audio or your own input. |
 
@@ -106,6 +108,20 @@ they match what the player saw. While the panel is open the component clears
 
 The component is inert outside Web builds and in the Editor. There is nothing to remove for a native
 build, but testers will not see the button there.
+
+### Posting from a downloaded build
+
+A native build has no Prototir session, and providers like Google refuse to sign in inside an
+embedded browser. So the build sends the tester to a real one: it shows a short code and a QR, the
+tester approves at `prototir.com/link` on their desktop or phone, and the build receives a token
+scoped to that one prototype.
+
+They approve once per machine, not once per comment, and the screenshot they were writing is kept
+and posted the moment they come back. Testers can disconnect any build from their Prototir account
+settings.
+
+Set `ApiBase` and `PrototypeSlug` to enable it. Without them the panel saves review files instead,
+which needs no account and works offline.
 
 On Prototir the feedback becomes an ordinary comment on the prototype, after Prototir's own
 confirmation dialog. In a Web build you host yourself the panel saves a
