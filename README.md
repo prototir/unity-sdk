@@ -90,8 +90,15 @@ builds. They capture the current view, drop a pin on that screenshot and write a
 | `ProjectId` | Stable identifier. Reviews exported from another project are refused on import. |
 | `BuildId` | Recorded with the feedback so you know which build a screenshot came from. |
 | `Corner` | `bottom-left` (default), `bottom-right`, `top-left`, or `top-right`. |
+| `Launcher` | `auto` (default) lets Prototir draw the control on its own surfaces; `watermark` always shows the Prototir mark; `host` draws nothing. |
+| `Theme` | `auto` (default) follows the player's light/dark preference; `light` or `dark` pins it. |
 | `PauseWhileReviewing` | Sets `Time.timeScale` to zero while the panel is open. |
 | `ReviewVisibilityChanged` | Fires with `true`/`false` so you can pause audio or your own input. |
+
+Inside the Prototir player, Prototir draws **Feedback** in its own control bar and the component
+stays out of the way. Anywhere else it shows the Prototir mark, which opens a menu with
+**Screenshot & comment**, **Comments** and **Open on Prototir** - the same menu testers see in a
+web build, so the experience does not change between the two.
 
 Screenshots are taken with `ScreenCapture.CaptureScreenshotAsTexture` after `WaitForEndOfFrame`, so
 they match what the player saw. While the panel is open the component clears

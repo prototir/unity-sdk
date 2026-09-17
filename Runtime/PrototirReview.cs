@@ -12,6 +12,10 @@ namespace Prototir
         public string ProjectId = "my-prototype";
         public string BuildId = "development";
         public string Corner = "bottom-left";
+        [Tooltip("auto lets Prototir draw the control on its own surfaces; watermark always shows the Prototir mark.")]
+        public string Launcher = "auto";
+        [Tooltip("auto follows the player's light/dark preference.")]
+        public string Theme = "auto";
         public bool PauseWhileReviewing = true;
         public UnityEvent<bool> ReviewVisibilityChanged = new UnityEvent<bool>();
         private float previousTimeScale;
@@ -19,7 +23,7 @@ namespace Prototir
         private bool previousKeyboardCapture;
         private GameObject receiverObject;
 
-        [Serializable] private class Options { public string project; public string build; public string corner; }
+        [Serializable] private class Options { public string project; public string build; public string corner; public string launcher; public string theme; }
         private void Start()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -27,7 +31,7 @@ namespace Prototir
             receiverObject = new GameObject("__PrototirReview_" + GetInstanceID());
             receiverObject.transform.SetParent(transform, false);
             receiverObject.AddComponent<PrototirReviewReceiver>().Owner = this;
-            Prototir_ReviewEnable(JsonUtility.ToJson(new Options { project = ProjectId, build = BuildId, corner = Corner }), receiverObject.name);
+            Prototir_ReviewEnable(JsonUtility.ToJson(new Options { project = ProjectId, build = BuildId, corner = Corner, launcher = Launcher, theme = Theme }), receiverObject.name);
 #endif
         }
         public void OnReviewVisibility(string value)
