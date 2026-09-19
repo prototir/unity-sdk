@@ -62,6 +62,9 @@ namespace Prototir
             Prototir_Ready();
 #else
             MockReadySent?.Invoke();
+#if !UNITY_EDITOR
+            Native.PrototirNativeRuntime.Ready();
+#endif
 #endif
         }
 
@@ -74,6 +77,9 @@ namespace Prototir
             Prototir_Event(normalized, jsonData ?? string.Empty);
 #else
             MockEventSent?.Invoke(normalized, jsonData);
+#if !UNITY_EDITOR
+            Native.PrototirNativeRuntime.Event(normalized);
+#endif
 #endif
         }
 
@@ -93,8 +99,103 @@ namespace Prototir
             Prototir_Score(value);
 #else
             MockScoreSent?.Invoke(value);
+#if !UNITY_EDITOR
+            Native.PrototirNativeRuntime.Score(value);
+#endif
 #endif
         }
+
+        /// <summary>Whether this build may act for a person. Always false in a Web export,
+        /// where the page already carries the visitor's session and nothing needs pairing.</summary>
+        public static bool IsPaired =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            false;
+#else
+            Native.PrototirNativeRuntime.IsPaired;
+#endif
+
+        /// <summary>Asks Prototir for a pairing code and waits for a tester to approve it on
+        /// prototir.com. Subscribe to <see cref="PairingStarted"/> to show the code, the link and
+        /// the QR: the SDK draws nothing, because it cannot know your art direction, your input
+        /// model, or whether you are in VR.</summary>
+        public static Task<Native.PrototirPairingResult> BeginPairingAsync(
+            CancellationToken cancellationToken = default) =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Task.FromResult(new Native.PrototirPairingResult
+            {
+                Outcome = Native.PrototirPairingOutcome.Failed,
+                Message = "A Web export does not pair; the page already has the visitor's session.",
+            });
+#else
+            Native.PrototirNativeRuntime.BeginPairingAsync(cancellationToken);
+#endif
+
+        public static event Action<Native.PrototirPairingRequest> PairingStarted
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            add { } remove { }
+#else
+            add => Native.PrototirNativeRuntime.PairingStarted += value;
+            remove => Native.PrototirNativeRuntime.PairingStarted -= value;
+#endif
+        }
+
+        public static event Action PairingSucceeded
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            add { } remove { }
+#else
+            add => Native.PrototirNativeRuntime.PairingSucceeded += value;
+            remove => Native.PrototirNativeRuntime.PairingSucceeded -= value;
+#endif
+        }
+
+        /// <summary>A human-readable reason, meant to be shown. Also raised when a paired build
+        /// is refused later, which means the tester revoked it and it must pair again.</summary>
+        public static event Action<string> PairingFailed
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            add { } remove { }
+#else
+            add => Native.PrototirNativeRuntime.PairingFailed += value;
+            remove => Native.PrototirNativeRuntime.PairingFailed -= value;
+#endif
+        }
+
+        public static void CancelPairing()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Native.PrototirNativeRuntime.CancelPairing();
+#endif
+        }
+
+        /// <summary>Forgets the stored token, so the build pairs again next time.</summary>
+        public static void Unpair()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Native.PrototirNativeRuntime.Unpair();
+#endif
+        }
+
+        /// <summary>Posts feedback as the tester who approved this build. No session is needed
+        /// first: approving the pairing is the stronger signal, so the usual played-it gate is
+        /// waived for a paired device.</summary>
+        public static Task<bool> SendFeedbackAsync(
+            string text, CancellationToken cancellationToken = default) =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Task.FromResult(false);
+#else
+            Native.PrototirNativeRuntime.SendFeedbackAsync(text, cancellationToken);
+#endif
+
+        /// <summary>Reports the session so far. Called automatically when the application quits;
+        /// call it yourself at a natural break, such as the end of a run.</summary>
+        public static Task FlushSessionAsync(CancellationToken cancellationToken = default) =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Task.CompletedTask;
+#else
+            Native.PrototirNativeRuntime.FlushAsync(cancellationToken);
+#endif
 
         public static Task<string> StorageGetAsync(
             string key,
