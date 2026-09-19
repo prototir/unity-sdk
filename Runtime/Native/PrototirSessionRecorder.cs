@@ -35,8 +35,13 @@ namespace Prototir.Native
     {
         /// <summary>Distinct event names kept. Past this the counts still accumulate into the
         /// total, but the per-name breakdown stops growing: a runaway loop generating unique names
-        /// must not turn one session into an unbounded payload.</summary>
-        public const int MaxDistinctSignals = 64;
+        /// must not turn one session into an unbounded payload.
+        ///
+        /// <para>The same number the server keeps (<c>MaxSignalNamesPerSession</c>). Sending more
+        /// would not record more: the server drops the surplus silently, so the only effect of a
+        /// larger number here would be a bigger payload and a different answer to "how many
+        /// events can I use" depending on who you ask.</para></summary>
+        public const int MaxDistinctSignals = 50;
 
         private readonly Func<DateTimeOffset> _now;
         private readonly Dictionary<string, int> _signals = new(StringComparer.Ordinal);
