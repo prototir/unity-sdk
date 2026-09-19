@@ -137,7 +137,10 @@ itself. None of this code reaches a Web build, which strips it at compile time.
 
 Use **Prototir > Create Settings**, then fill in the slug from your prototype's URL,
 `prototir.com/p/<slug>`. A game that decides its prototype at runtime can call
-`PrototirNativeRuntime.Configure` instead.
+`PrototirSdk.Configure("your-slug")` instead.
+
+Import the **Download Pairing** sample from the Package Manager for a working pairing screen you
+can run immediately, then rebuild it in whatever UI your game already uses.
 
 ```csharp
 void Start()

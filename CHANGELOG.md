@@ -10,6 +10,10 @@
 - Added an on-disk session queue: a play is written down on quit and sent at the next launch, so
   closing the game or being offline no longer loses it. This also removes a hang on quit, where
   waiting for a `UnityWebRequest` blocked the very player loop that had to complete it.
+- Added `PrototirSdk.Configure(slug, apiBaseUrl, deviceLabel)` for a build that learns its
+  prototype at runtime, and `PrototirSdk.PairingState` for drawing the difference between "not
+  paired" and "waiting for approval". The Godot addon already had both.
+- Added a **Download Pairing** sample: a working pairing screen in one file, with no scene setup.
 - Added **Prototir > Create Settings**, and `PrototirSettings` for the prototype slug, API base URL
   and device label.
 - Added **Prototir > Export for Prototir (Web)** and **(Download)**, which build, zip and write

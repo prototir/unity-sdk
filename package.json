@@ -32,6 +32,11 @@
       "displayName": "Prototir Manifest Example",
       "description": "Portable prototir.json example for customizing Unity prototype metadata.",
       "path": "Samples~/PrototirWebTemplate"
+    },
+    {
+      "displayName": "Download Pairing",
+      "description": "A working pairing screen for a downloadable build: shows the code, the link, and posts feedback once approved.",
+      "path": "Samples~/DownloadPairing"
     }
   ]
 }

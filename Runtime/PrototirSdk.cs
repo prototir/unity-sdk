@@ -130,6 +130,30 @@ namespace Prototir
             Native.PrototirNativeRuntime.BeginPairingAsync(cancellationToken);
 #endif
 
+        /// <summary>Points a downloadable build at a prototype from code, instead of the settings
+        /// asset. The Godot addon has had <c>Prototir.configure</c> from the start; this is the
+        /// same thing, and without it a Unity build could only learn its slug by being rebuilt.
+        ///
+        /// <para>Does nothing in a Web build, which takes its prototype from the page.</para></summary>
+        public static void Configure(string slug, string apiBaseUrl = null, string deviceLabel = null)
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Native.PrototirNativeRuntime.Configure(
+                PrototirSettings.Create(slug, apiBaseUrl, deviceLabel));
+#endif
+        }
+
+        /// <summary>Where this build stands. <see cref="IsPaired"/> answers the common question;
+        /// this one separates "not paired" from "waiting for someone to approve a code", which is
+        /// the difference between drawing a button and drawing a spinner. Readable after a scene
+        /// reload, when the events have already been and gone.</summary>
+        public static Native.PrototirPairingState PairingState =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Native.PrototirPairingState.NotPaired;
+#else
+            Native.PrototirNativeRuntime.PairingState;
+#endif
+
         public static event Action<Native.PrototirPairingRequest> PairingStarted
         {
 #if UNITY_WEBGL && !UNITY_EDITOR

@@ -37,6 +37,19 @@ namespace Prototir
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(prototypeSlug);
 
+        /// <summary>Settings built in code, for a game that learns its prototype at runtime rather
+        /// than at author time: a launcher that passes it in, a build shared across several
+        /// prototypes, or a test that wants to point somewhere other than production.</summary>
+        public static PrototirSettings Create(
+            string prototypeSlug, string apiBaseUrl = null, string deviceLabel = null)
+        {
+            var settings = CreateInstance<PrototirSettings>();
+            settings.prototypeSlug = prototypeSlug ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(apiBaseUrl)) settings.apiBaseUrl = apiBaseUrl;
+            if (!string.IsNullOrWhiteSpace(deviceLabel)) settings.deviceLabel = deviceLabel;
+            return settings;
+        }
+
         /// <summary>Returns null when the asset is missing. Callers report that as configuration
         /// the creator still has to do, rather than throwing inside someone's game.</summary>
         public static PrototirSettings Load() => Resources.Load<PrototirSettings>(ResourceName);
