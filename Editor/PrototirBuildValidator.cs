@@ -30,6 +30,15 @@ namespace Prototir.Editor
 
         public void OnPostprocessBuild(BuildReport report)
         {
+            // Written for every target, not just Web: a downloadable build is the case the id
+            // exists for (D43). outputPath is the executable for a desktop player and the folder
+            // for a Web export, so the sidecar goes beside whichever it is.
+            var directory = report.summary.platform == BuildTarget.WebGL
+                ? report.summary.outputPath
+                : Path.GetDirectoryName(report.summary.outputPath);
+            if (!string.IsNullOrEmpty(directory))
+                PrototirBuildId.Write(directory, PackageVersion());
+
             if (report.summary.platform != BuildTarget.WebGL) return;
             WriteManifest(report.summary.outputPath);
             var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PrototirReview).Assembly);
@@ -40,6 +49,21 @@ namespace Prototir.Editor
             if (!entry.Contains("src=\"prototir-review.js\""))
                 File.WriteAllText(entryPath, entry.Replace("</head>", "<script src=\"prototir-review.js\"></script></head>"));
             ValidateExport(report.summary.outputPath);
+        }
+
+        private static string PackageVersion()
+        {
+            try
+            {
+                var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
+                    typeof(PrototirReview).Assembly);
+                return package?.version ?? "unknown";
+            }
+            catch (Exception)
+            {
+                // Only ever a label inside the sidecar; never worth failing a build over.
+                return "unknown";
+            }
         }
 
         [MenuItem("Prototir/Create or Open Project Manifest")]
