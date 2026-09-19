@@ -6,6 +6,11 @@
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
 *.csproj
+# Unity regenerates a .csproj per assembly, which is why they are ignored. The engine-free test
+# project is hand-written and must ship, or nobody else can run the tests.
+!Tests~/**/*.csproj
+Tests~/**/bin/
+Tests~/**/obj/
 *.sln
 *.user
 *.unitypackage
