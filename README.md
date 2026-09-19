@@ -129,6 +129,57 @@ confirmation dialog. In a Web build you host yourself the panel saves a
 See the [Web SDK README](https://github.com/prototir/web-sdk#screenshot-feedback) for the file format
 and its limits.
 
+## Downloadable builds
+
+A Web build takes everything from the page around it: the visitor is already signed in, and the
+shell watches the prototype and reports for it. A download has none of that, so the SDK does it
+itself. None of this code reaches a Web build, which strips it at compile time.
+
+Use **Prototir > Create Settings**, then fill in the slug from your prototype's URL,
+`prototir.com/p/<slug>`. A game that decides its prototype at runtime can call
+`PrototirNativeRuntime.Configure` instead.
+
+```csharp
+void Start()
+{
+    PrototirSdk.Ready();
+    PrototirSdk.PairingStarted += request => codeLabel.text = request.Code;
+    if (!PrototirSdk.IsPaired) _ = PrototirSdk.BeginPairingAsync();
+}
+```
+
+The SDK draws nothing. It cannot know your art direction, your input model, or whether you are in
+VR, so it hands you the code, the verification link and a ready-made QR (`request.QrSvg`) and
+leaves the screen to you. `PairingSucceeded` and `PairingFailed` cover the rest; `PairingFailed`
+also fires when a paired build is refused later, which means the tester revoked it.
+
+`Ready`, `Event` and `Score` accumulate one session rather than one request each. Call
+`PrototirSdk.FlushSessionAsync()` at a natural break, such as the end of a run. On quit there is no
+time to send anything, so the session is written under `Application.persistentDataPath` and sent at
+the next launch. That covers the tester playing on a plane as well: sessions carry their server id,
+so one arriving late updates its row rather than counting a second play.
+
+`PrototirSdk.SendFeedbackAsync("...")` posts a comment as the tester who approved the build. No
+session is needed first, because approving the pairing is the stronger signal.
+
+Pairing works in the Editor, so you can build the screen without exporting every time. Reporting
+does not: pressing Play is not a play, and counting it would put your own testing in your own
+numbers.
+
+## Export buttons
+
+Two entries under the **Prototir** menu:
+
+- **Export for Prototir (Web)** runs the Project Setup checks, builds, and zips the result.
+- **Export for Prototir (Download)** builds for the active desktop target. It does not switch
+  platform for you, because switching reimports the whole project.
+
+Both produce a ZIP ready to drop on the upload page, and both write `prototir-build.json` beside the
+build. Prototir records that id from the archive, and a running build reports the same id when it
+pairs; a match shows the build running is the build that was uploaded, and nothing more. Both sides
+come from a file you control, so it is not verification, security or anti-cheat. It catches an old
+build being run against a new upload.
+
 ## Documentation and examples
 
 - [Package documentation](Documentation~/index.md)
@@ -140,10 +191,13 @@ and its limits.
 
 ```bash
 node tools/test.mjs
+dotnet test Tests~/Prototir.Native.Tests
 ```
 
 The Node check validates package structure, bridge behavior, the project assistant, export
-validator, and Web template. A tagged release must additionally compile in Unity 6 and pass a real
+validator, and Web template. The dotnet tests cover the download path: pairing, the session
+recorder and the session queue run against fake HTTP, a fake clock and a fake delay, so a poll loop
+that waits ten minutes for a deadline finishes instantly and nothing touches the network. A tagged release must additionally compile in Unity 6 and pass a real
 Prototir sandbox play test.
 
 ## License

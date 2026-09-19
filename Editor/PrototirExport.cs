@@ -57,6 +57,16 @@ namespace Prototir.Editor
                 return;
             }
 
+            if (!HasSlug() && !Application.isBatchMode && !EditorUtility.DisplayDialog(
+                    "Prototir export",
+                    "This project has no prototype slug, so the build will not report sessions and "
+                    + "testers will not be able to send feedback from inside it.\n\n"
+                    + "That is expected the first time: the slug only exists once the prototype is "
+                    + "on Prototir. Upload this build, then use Prototir > Create Settings, fill in "
+                    + "the slug from prototir.com/p/<slug>, and export again.",
+                    "Export anyway", "Cancel"))
+                return;
+
             var parent = EditorUtility.SaveFolderPanel(
                 $"Export for Prototir ({Describe(target)})", string.Empty, string.Empty);
             if (!string.IsNullOrEmpty(parent))
@@ -146,6 +156,13 @@ namespace Prototir.Editor
                 "Show me");
             EditorUtility.RevealInFinder(archive);
             return true;
+        }
+
+        /// <summary>A download with no slug still runs; it simply cannot say anything back.</summary>
+        private static bool HasSlug()
+        {
+            var settings = PrototirSettings.Load();
+            return settings != null && settings.IsConfigured;
         }
 
         private static bool IsDesktop(BuildTarget target) =>

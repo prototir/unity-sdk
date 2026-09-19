@@ -23,13 +23,17 @@ namespace Prototir.Native
     /// plain keeps the whole thing usable from a test.</para></summary>
     public static class PrototirNativeRuntime
     {
+        private const string RevokedMessage = "Access to this build was withdrawn. Pair it again.";
+
         private static readonly object Gate = new();
         private static PrototirSessionRecorder _session;
         private static PrototirSettings _settings;
         private static IPrototirTokenStore _tokens;
         private static PrototirPairingFlow _flow;
         private static CancellationTokenSource _pairingCancel;
+        private static PrototirSessionQueue _queue;
         private static bool _configurationWarned;
+        private static bool _storedOnQuit;
 
         /// <summary>Raised when a pairing code is ready to show. The SDK never draws it: it cannot
         /// know the game's art direction, its input model, or whether it is in VR.</summary>
@@ -55,6 +59,9 @@ namespace Prototir.Native
         private static PrototirSessionRecorder Session =>
             _session ??= new PrototirSessionRecorder(() => DateTimeOffset.UtcNow);
 
+        private static PrototirSessionQueue Queue => _queue ??= new PrototirSessionQueue(
+            Path.Combine(Application.persistentDataPath, "prototir", "pending"));
+
         /// <summary>Overrides the settings asset, for a game that decides its slug at runtime.</summary>
         public static void Configure(PrototirSettings settings)
         {
@@ -66,10 +73,74 @@ namespace Prototir.Native
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
-            // A session that is never sent is a play the creator never sees, and quitting is the
-            // normal way a desktop game ends.
-            Application.quitting += () => FlushAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Application.quitting += StoreSession;
+            // Deliberately not awaited: nothing in the game should wait on last session getting
+            // through, and a failure here is already handled by leaving it in the queue.
+            _ = SendPendingAsync(CancellationToken.None);
         }
+
+        /// <summary>A session that is never sent is a play the creator never sees, and quitting is
+        /// the normal way a desktop game ends. There is no time to send one here, so it is written
+        /// down instead: see <see cref="PrototirSessionQueue"/> for why waiting would hang.</summary>
+        public static void StoreSession()
+        {
+            if (_storedOnQuit) return;
+            _storedOnQuit = true;
+            if (!Session.HasAnythingToReport) return;
+            if (Settings == null || !Settings.IsConfigured) return;
+            if (string.IsNullOrEmpty(Token)) return;
+            Queue.Store(new PrototirUnityJson().Encode(Session.Snapshot()));
+        }
+
+        /// <summary>Sends what earlier runs left behind. Anything the server takes, or refuses in a
+        /// way that will not change, is dropped; anything that failed because the network did is
+        /// kept for next time.</summary>
+        public static async Task SendPendingAsync(CancellationToken ct)
+        {
+            // Quiet rather than EnsureConfigured: this runs at boot in every build, including ones
+            // whose creator never asked for any of this.
+            if (Settings == null || !Settings.IsConfigured) return;
+            var token = Token;
+            if (string.IsNullOrEmpty(token)) return;
+
+            foreach (var path in Queue.Pending())
+            {
+                if (ct.IsCancellationRequested) return;
+                var body = Queue.Read(path);
+                if (string.IsNullOrWhiteSpace(body))
+                {
+                    Queue.Discard(path);
+                    continue;
+                }
+
+                PrototirHttpResponse response;
+                try
+                {
+                    response = await new PrototirUnityHttp()
+                        .PostJsonAsync(SessionsUrl(), body, token, ct).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+
+                if (PrototirPairingFlow.IsTokenTerminal(response.Status))
+                {
+                    Unpair();
+                    PairingFailed?.Invoke(RevokedMessage);
+                    return;
+                }
+                if (response.Status == 0 || response.Status >= 500)
+                {
+                    // Offline, or the server is unwell. Keeping the rest is the whole point.
+                    return;
+                }
+                Queue.Discard(path);
+            }
+        }
+
+        private static string SessionsUrl() =>
+            $"{Settings.ApiBaseUrl.TrimEnd('/')}/prototypes/{Uri.EscapeDataString(Settings.PrototypeSlug)}/sessions";
 
         public static void Ready() => Session.Ready();
 
@@ -91,16 +162,22 @@ namespace Prototir.Native
             var body = new PrototirUnityJson().Encode(payload);
             try
             {
-                var response = await new PrototirUnityHttp().PostJsonAsync(
-                    $"{Settings.ApiBaseUrl.TrimEnd('/')}/prototypes/{Uri.EscapeDataString(Settings.PrototypeSlug)}/sessions",
-                    body, token, ct).ConfigureAwait(false);
+                var response = await new PrototirUnityHttp()
+                    .PostJsonAsync(SessionsUrl(), body, token, ct).ConfigureAwait(false);
 
                 if (PrototirPairingFlow.IsTokenTerminal(response.Status))
                 {
                     // Revoked, or aimed at a prototype this token was not issued for. Retrying
                     // just repeats the refusal.
                     Unpair();
-                    PairingFailed?.Invoke("This build's access was withdrawn. Pair it again.");
+                    PairingFailed?.Invoke(RevokedMessage);
+                    return;
+                }
+                if (response.Status == 0 || response.Status >= 500)
+                {
+                    // Not sent, and not the caller's problem to solve. It goes in the queue and
+                    // leaves with the next launch.
+                    Queue.Store(body);
                     return;
                 }
                 if (response.Status == 200)
@@ -111,6 +188,7 @@ namespace Prototir.Native
             }
             catch (Exception error)
             {
+                Queue.Store(body);
                 // Losing a session is not worth interrupting someone's game over.
                 Debug.LogWarning($"Prototir: could not report this session ({error.Message}).");
             }
@@ -203,7 +281,7 @@ namespace Prototir.Native
                 if (PrototirPairingFlow.IsTokenTerminal(response.Status))
                 {
                     Unpair();
-                    PairingFailed?.Invoke("This build's access was withdrawn. Pair it again.");
+                    PairingFailed?.Invoke(RevokedMessage);
                     return false;
                 }
                 return response.Status is 200 or 201;
