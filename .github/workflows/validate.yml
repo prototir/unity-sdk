@@ -17,3 +17,16 @@ jobs:
         with:
           node-version: 22
       - run: node tools/test.mjs
+
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      # The download path decides real things: whether a play is reported, whether a token is
+      # dropped, whether a session survives a quit. None of it needs Unity, which is exactly why
+      # Runtime/Native keeps the engine on the other side of an interface.
+      - run: dotnet test Tests~/Prototir.Native.Tests --nologo
