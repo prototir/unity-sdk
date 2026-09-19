@@ -5,6 +5,10 @@
   "description": "Unity 6 Web adapter for the Prototir protocol: readiness, events, scores, storage, and managed AI.",
   "unity": "6000.0",
   "unityRelease": "0f1",
+  "dependencies": {
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0"
+  },
   "documentationUrl": "https://prototir.com/docs/creators?runtime=unity#setup",
   "changelogUrl": "https://github.com/prototir/unity-sdk/blob/main/CHANGELOG.md",
   "licensesUrl": "https://github.com/prototir/unity-sdk/blob/main/LICENSE.md",

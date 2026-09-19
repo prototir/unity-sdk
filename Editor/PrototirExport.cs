@@ -37,7 +37,8 @@ namespace Prototir.Editor
                 return;
             }
 
-            Export(BuildTarget.WebGL, "Export for Prototir (Web)", "prototir-web");
+            var parent = EditorUtility.SaveFolderPanel("Export for Prototir (Web)", string.Empty, string.Empty);
+            if (!string.IsNullOrEmpty(parent)) Export(BuildTarget.WebGL, parent, "prototir-web");
         }
 
         [MenuItem("Prototir/Export for Prototir (Download)", priority = 21)]
@@ -56,10 +57,16 @@ namespace Prototir.Editor
                 return;
             }
 
-            Export(target, $"Export for Prototir ({Describe(target)})", $"prototir-{Describe(target).ToLowerInvariant()}");
+            var parent = EditorUtility.SaveFolderPanel(
+                $"Export for Prototir ({Describe(target)})", string.Empty, string.Empty);
+            if (!string.IsNullOrEmpty(parent))
+                Export(target, parent, $"prototir-{Describe(target).ToLowerInvariant()}");
         }
 
-        private static void Export(BuildTarget target, string title, string archiveName)
+        /// <summary>The export itself, with the folder already chosen. Separate from the menu
+        /// items so it can be driven headlessly: picking a folder is UI, building and packaging
+        /// is not, and only the second half is worth exercising without a human present.</summary>
+        public static bool Export(BuildTarget target, string parent, string archiveName)
         {
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)
@@ -68,11 +75,8 @@ namespace Prototir.Editor
             if (scenes.Length == 0)
             {
                 Fail("No scenes are enabled in Build Settings, so there is nothing to export.");
-                return;
+                return false;
             }
-
-            var parent = EditorUtility.SaveFolderPanel(title, string.Empty, string.Empty);
-            if (string.IsNullOrEmpty(parent)) return;
 
             // A clean folder per export: leftovers from a previous build ship inside the archive
             // and are impossible to spot once it is uploaded.
@@ -95,7 +99,7 @@ namespace Prototir.Editor
             if (report.summary.result != BuildResult.Succeeded)
             {
                 Fail($"The build did not finish ({report.summary.result}). See the Console for details.");
-                return;
+                return false;
             }
 
             var archive = output + ".zip";
@@ -109,16 +113,29 @@ namespace Prototir.Editor
             }
             catch (Exception error)
             {
+                // A failed CreateFromDirectory leaves a truncated archive behind. Leaving it next
+                // to a perfectly good build is how someone uploads half a game, so it goes.
+                try { if (File.Exists(archive)) File.Delete(archive); } catch (IOException) { }
+
+                // Windows still caps most paths at 260 characters, and it reports the overrun as
+                // a missing file, which sends people looking for the wrong problem entirely.
+                var hint = error is DirectoryNotFoundException or PathTooLongException
+                    ? " This usually means the path is too long for Windows; export somewhere "
+                      + "closer to the drive root."
+                    : string.Empty;
+
                 // The build itself is fine and can be zipped by hand, so this is a note, not a
                 // failure that should make a creator think the export was wasted.
                 Debug.LogWarning($"Prototir: the build succeeded but could not be zipped ({error.Message}). " +
-                                 $"Zip {output} yourself before uploading.");
-                EditorUtility.RevealInFinder(output);
-                return;
+                                 $"Zip {output} yourself before uploading.{hint}");
+                if (!Application.isBatchMode) EditorUtility.RevealInFinder(output);
+                return false;
             }
 
             var megabytes = new FileInfo(archive).Length / 1024d / 1024d;
             Debug.Log($"Prototir: exported {archive} ({megabytes:0.0} MB). Upload it at prototir.com.");
+            if (Application.isBatchMode) return true;
+
             EditorUtility.DisplayDialog(
                 "Ready to upload",
                 $"{Path.GetFileName(archive)}\n{megabytes:0.0} MB\n\n" +
@@ -128,6 +145,7 @@ namespace Prototir.Editor
                       "image is required when there is no web build."),
                 "Show me");
             EditorUtility.RevealInFinder(archive);
+            return true;
         }
 
         private static bool IsDesktop(BuildTarget target) =>
@@ -157,7 +175,11 @@ namespace Prototir.Editor
             };
         }
 
-        private static void Fail(string message) =>
-            EditorUtility.DisplayDialog("Prototir export", message, "OK");
+        private static void Fail(string message)
+        {
+            // A dialog nobody can dismiss would hang a headless build forever.
+            if (Application.isBatchMode) Debug.LogError($"Prototir export: {message}");
+            else EditorUtility.DisplayDialog("Prototir export", message, "OK");
+        }
     }
 }
