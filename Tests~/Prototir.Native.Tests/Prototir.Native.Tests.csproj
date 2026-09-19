@@ -18,7 +18,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../Runtime/Native/**/*.cs" />
+    <!-- Only the top level: Runtime/Native/Unity/ is the engine glue and needs Unity to
+         compile at all, which is the whole reason the protocol lives one level up. -->
+    <Compile Include="../../Runtime/Native/*.cs" />
     <Compile Include="*.cs" />
   </ItemGroup>
 

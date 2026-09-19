@@ -15,25 +15,28 @@ namespace Prototir.Native
         Failed,
     }
 
+    /// <summary>Plain settable properties, not `init`: Unity compiles this package as
+    /// netstandard2.1, which has no `IsExternalInit`, so `init` accessors do not compile
+    /// there even though the net8.0 test project accepts them.</summary>
     public sealed class PrototirPairingResult
     {
-        public PrototirPairingOutcome Outcome { get; init; }
-        public string Token { get; init; }
-        public string Message { get; init; }
+        public PrototirPairingOutcome Outcome { get; set; }
+        public string Token { get; set; }
+        public string Message { get; set; }
     }
 
     /// <summary>What the game shows a tester while it waits.</summary>
     public sealed class PrototirPairingRequest
     {
-        public string Code { get; init; }
-        public string VerificationUrl { get; init; }
+        public string Code { get; set; }
+        public string VerificationUrl { get; set; }
         /// <summary>The QR the server rendered, decoded from its data URL. Rendered server-side
         /// deliberately: a client-side encoder is dense, easy to get subtly wrong, and would be
         /// written three times, and the place it matters most is where it is most awkward.</summary>
-        public string QrSvg { get; init; }
-        public string PrototypeTitle { get; init; }
-        public TimeSpan ExpiresIn { get; init; }
-        public TimeSpan PollInterval { get; init; }
+        public string QrSvg { get; set; }
+        public string PrototypeTitle { get; set; }
+        public TimeSpan ExpiresIn { get; set; }
+        public TimeSpan PollInterval { get; set; }
     }
 
     /// <summary>The device code flow, with no engine in it.
