@@ -13,7 +13,9 @@
 - Added `PrototirSdk.Configure(slug, apiBaseUrl, deviceLabel)` for a build that learns its
   prototype at runtime, and `PrototirSdk.PairingState` for drawing the difference between "not
   paired" and "waiting for approval". The Godot addon already had both.
-- Added a **Download Pairing** sample: a working pairing screen in one file, with no scene setup.
+- Added a **Download Pairing** sample: a working pairing screen in one file, with no scene
+  setup, including opening the approval page and copying the code. A game window has no
+  selectable text, so a printed URL on its own leaves the tester retyping it off a screen.
 - Added **Prototir > Create Settings**, and `PrototirSettings` for the prototype slug, API base URL
   and device label.
 - Added **Prototir > Export for Prototir (Web)** and **(Download)**, which build, zip and write

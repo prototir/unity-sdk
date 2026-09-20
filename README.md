@@ -153,7 +153,11 @@ void Start()
 
 The SDK draws nothing. It cannot know your art direction, your input model, or whether you are in
 VR, so it hands you the code, the verification link and a ready-made QR (`request.QrSvg`) and
-leaves the screen to you. `PairingSucceeded` and `PairingFailed` cover the rest; `PairingFailed`
+leaves the screen to you.
+
+Give the tester a way to act on it. Text they cannot select is a dead end, so offer
+`Application.OpenURL(request.VerificationUrl)` on desktop, and the QR or the bare code where a
+browser on this machine helps nobody, such as a headset. The sample does both. `PairingSucceeded` and `PairingFailed` cover the rest; `PairingFailed`
 also fires when a paired build is refused later, which means the tester revoked it.
 
 `Ready`, `Event` and `Score` accumulate one session rather than one request each. Call

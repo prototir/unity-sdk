@@ -79,7 +79,15 @@ namespace Prototir.Samples
                 GUILayout.Label(string.IsNullOrEmpty(_title) ? "Pair this build" : $"Pair: {_title}");
                 GUILayout.Label($"<size=28><b>{_code}</b></size>", Rich());
                 GUILayout.Label($"Approve it at {_verificationUrl}");
+
+                // A code the tester can read but not act on is a dead end: the window has no
+                // selectable text, so without these they are retyping a URL by hand off a screen.
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Open in browser")) Application.OpenURL(_verificationUrl);
+                // For a headset or a second machine, where opening a browser here helps nobody.
+                if (GUILayout.Button("Copy code")) GUIUtility.systemCopyBuffer = _code;
                 if (GUILayout.Button("Cancel")) CancelPairing();
+                GUILayout.EndHorizontal();
             }
             else if (PrototirSdk.IsPaired)
             {
