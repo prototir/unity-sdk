@@ -93,6 +93,16 @@ try {
     'the generated Azure hostname changes if the app is recreated',
   );
 
+  // The name of the file Prototir injects at upload. The server picks the name and the SDK reads
+  // it, in different repositories, and a disagreement between them is silent: the build simply
+  // never finds its slug and the creator is told to configure it by hand, exactly as before the
+  // feature existed. Pinning the literal here is what turns that into a failing build.
+  assert.match(
+    settings,
+    /InjectedFileName = "prototir-prototype\.json"/,
+    'the injected slug file must be named prototir-prototype.json, which is what the API writes',
+  );
+
   console.log('Unity package and protocol checks passed.');
 } finally {
   rmSync(root, { recursive: true, force: true });

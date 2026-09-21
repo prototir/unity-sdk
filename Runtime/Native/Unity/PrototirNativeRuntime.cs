@@ -72,13 +72,11 @@ namespace Prototir.Native
             _flow = null;
             _configurationWarned = false;
 
-            // Everything that ran at boot has already been and gone, and it gave up because
-            // nothing knew which prototype this was. This is the first moment that is true, so
-            // the queue and the handshake both get their chance here too; otherwise a build that
-            // learns its prototype at runtime never reports a session and never switches its
-            // prototype on. Both are cheap when there is nothing to do.
+            // What ran at boot has already been and gone, and it gave up because nothing knew
+            // which prototype this was. This is the first moment that is true, so the queue gets
+            // its chance here too; otherwise a build that learns its prototype at runtime never
+            // reports a session at all. Cheap when there is nothing to send.
             _ = SendPendingAsync(CancellationToken.None);
-            _ = HandshakeAsync(CancellationToken.None);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -86,49 +84,9 @@ namespace Prototir.Native
         {
             Application.quitting += StoreSession;
             PrototirNativeTicker.Install();
-            // Says which build this is, so a download-only prototype stops being inert the first
-            // time anyone runs it. Needs no account and no pairing: the question is whether this
-            // is the build that was uploaded, which nobody has to vouch for.
-            _ = HandshakeAsync(CancellationToken.None);
             // Deliberately not awaited: nothing in the game should wait on last session getting
             // through, and a failure here is already handled by leaving it in the queue.
             _ = SendPendingAsync(CancellationToken.None);
-        }
-
-        /// <summary>Tells Prototir which build this is (D43 §16.5.11).
-        ///
-        /// <para>Fire and forget, and deliberately quiet on success: it concerns the creator, not
-        /// the player. A build that is not the uploaded one says so in the log, because the
-        /// alternative is a creator watching their prototype do nothing with nothing to search
-        /// for.</para></summary>
-        public static async Task HandshakeAsync(CancellationToken ct)
-        {
-            if (Settings == null || !Settings.IsConfigured) return;
-            var buildId = ReadBuildId();
-
-            try
-            {
-                var response = await new PrototirUnityHttp().PostJsonAsync(
-                    $"{Settings.ApiBaseUrl.TrimEnd('/')}/prototypes/{Uri.EscapeDataString(Settings.PrototypeSlug)}/handshake",
-                    new PrototirUnityJson().Encode(new HandshakeBody { buildId = buildId }),
-                    null, ct).ConfigureAwait(false);
-                if (response.Status != 200) return;
-
-                var result = new PrototirUnityJson().Decode<HandshakeResponse>(response.Body);
-                if (result.verified) return;
-
-                Debug.LogWarning(result.reason == "no_build_id"
-                    ? "Prototir: this build carries no build id, so the prototype cannot be switched " +
-                      "on. Export it through Prototir > Export for Prototir (Download) rather than " +
-                      "zipping it by hand."
-                    : "Prototir: this build is not the one uploaded to Prototir, so the prototype " +
-                      "stays inactive. Upload this exact build, or run the build you uploaded.");
-            }
-            catch (Exception)
-            {
-                // Offline at launch is ordinary. The next launch asks again, and so does every
-                // other copy of this build that anyone runs.
-            }
         }
 
         /// <summary>A session that is never sent is a play the creator never sees, and quitting is
@@ -401,19 +359,6 @@ namespace Prototir.Native
         {
             public string sessionId;
             public bool real;
-        }
-
-        [Serializable]
-        private sealed class HandshakeBody
-        {
-            public string buildId;
-        }
-
-        [Serializable]
-        private sealed class HandshakeResponse
-        {
-            public bool verified;
-            public string reason;
         }
 
         [Serializable]

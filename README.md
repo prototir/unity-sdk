@@ -135,9 +135,14 @@ A Web build takes everything from the page around it: the visitor is already sig
 shell watches the prototype and reports for it. A download has none of that, so the SDK does it
 itself. None of this code reaches a Web build, which strips it at compile time.
 
-Use **Prototir > Create Settings**, then fill in the slug from your prototype's URL,
-`prototir.com/p/<slug>`. A game that decides its prototype at runtime can call
-`PrototirSdk.Configure("your-slug")` instead.
+You do not configure the slug. Prototir writes it into the .zip as you upload the build, into a
+`prototir-prototype.json` beside the executable, and the SDK reads it from there. The slug does not
+exist until the prototype does, so there was never a value you could have put in your first export.
+
+Override it with **Prototir > Create Settings** when you need to: a build you ship outside
+Prototir, or an installer Prototir cannot write into. A game that decides its prototype at runtime
+can call `PrototirSdk.Configure("your-slug")`. The injected slug wins over the settings asset,
+because it travelled with that exact download.
 
 Import the **Download Pairing** sample from the Package Manager for a working pairing screen you
 can run immediately, then rebuild it in whatever UI your game already uses.

@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using UnityEngine;
 
 namespace Prototir
@@ -58,8 +60,68 @@ namespace Prototir
             return settings;
         }
 
-        /// <summary>Returns null when the asset is missing. Callers report that as configuration
-        /// the creator still has to do, rather than throwing inside someone's game.</summary>
-        public static PrototirSettings Load() => Resources.Load<PrototirSettings>(ResourceName);
+        /// <summary>Written beside the executable by Prototir when the build is uploaded. See
+        /// <see cref="ReadInjectedSlug"/> for why this beats the asset.</summary>
+        public const string InjectedFileName = "prototir-prototype.json";
+
+        /// <summary>Returns null when neither the injected file nor the asset says which prototype
+        /// this is. Callers report that as configuration the creator still has to do, rather than
+        /// throwing inside someone's game.</summary>
+        public static PrototirSettings Load()
+        {
+            var asset = Resources.Load<PrototirSettings>(ResourceName);
+            var injected = ReadInjectedSlug();
+            if (string.IsNullOrEmpty(injected)) return asset;
+            if (asset == null) return Create(injected);
+            if (injected == asset.PrototypeSlug) return asset;
+
+            // The injected slug wins, but everything else the creator set is theirs and is kept:
+            // an apiBaseUrl pointing at a local Prototir is the whole reason someone edits this.
+            return Create(injected, asset.apiBaseUrl, asset.deviceLabel);
+        }
+
+        /// <summary>The slug Prototir put in the build at upload.
+        ///
+        /// <para><b>Why this outranks the asset.</b> The slug does not exist until the prototype
+        /// does, and the prototype does not exist until a build has been uploaded to it, so the
+        /// first export a creator makes cannot possibly contain the right value. Prototir knows it
+        /// at upload and writes it in, which means a downloaded build reports back with nothing
+        /// set by hand. Where the two disagree, the one that travelled with this exact download is
+        /// the one describing this exact download.</para>
+        ///
+        /// <para>Returns null for anything unreadable. A build whose slug file is missing or
+        /// damaged falls back to the asset, which is the behaviour every build had before.</para></summary>
+        private static string ReadInjectedSlug()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // A Web export takes its prototype from the page it is embedded in, and the browser
+            // has no filesystem to read this from.
+            return null;
+#else
+            try
+            {
+                // dataPath is <build>/<Game>_Data, so its parent is the folder holding the
+                // executable, which is where the archive carried the file.
+                var root = Path.GetDirectoryName(Application.dataPath);
+                if (string.IsNullOrEmpty(root)) return null;
+                var path = Path.Combine(root, InjectedFileName);
+                if (!File.Exists(path)) return null;
+
+                var parsed = JsonUtility.FromJson<InjectedConfig>(File.ReadAllText(path));
+                var slug = parsed?.slug?.Trim();
+                return string.IsNullOrEmpty(slug) ? null : slug;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+#endif
+        }
+
+        [Serializable]
+        private sealed class InjectedConfig
+        {
+            public string slug;
+        }
     }
 }
