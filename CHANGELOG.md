@@ -7,6 +7,10 @@
   build. A Web build strips all of it at compile time.
 - Added `PrototirSdk.IsPaired`, `BeginPairingAsync`, `CancelPairing`, `Unpair`, `SendFeedbackAsync`
   and `FlushSessionAsync`, plus the `PairingStarted`, `PairingSucceeded` and `PairingFailed` events.
+- A play in progress now reports itself every 30 seconds, and when the window loses focus.
+  The only moment a session was ever sent was the next launch, so a tester who played once
+  and never opened the build again reported nothing at all, which is the most common way a
+  prototype gets tried.
 - A session is serialized to the exact contract: the server models its id and score as
   optional, and an always-present `"sessionId": ""` could not be parsed. The endpoint
   answered 500, the queue treats 5xx as retry-later, and so every session ever recorded

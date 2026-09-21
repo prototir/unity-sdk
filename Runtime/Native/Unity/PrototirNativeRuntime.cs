@@ -16,6 +16,14 @@ namespace Prototir.Native
     {
         private const string RevokedMessage = "Access to this build was withdrawn. Pair it again.";
 
+        /// <summary>How often a play in progress is reported.
+        ///
+        /// <para>Without this the only moment a session was ever sent was the next launch, so a
+        /// tester who plays once and never opens the build again reported nothing at all, which
+        /// is the most common way a prototype gets tried. Repeating is free of duplicates because
+        /// the first report returns an id the rest carry, so the server updates one row.</para></summary>
+        public const float FlushIntervalSeconds = 30f;
+
         private static readonly object Gate = new();
         private static PrototirSessionRecorder _session;
         private static PrototirSettings _settings;
@@ -75,6 +83,7 @@ namespace Prototir.Native
         private static void Bootstrap()
         {
             Application.quitting += StoreSession;
+            PrototirNativeTicker.Install();
             // Deliberately not awaited: nothing in the game should wait on last session getting
             // through, and a failure here is already handled by leaving it in the queue.
             _ = SendPendingAsync(CancellationToken.None);
@@ -173,13 +182,12 @@ namespace Prototir.Native
                     PairingFailed?.Invoke(RevokedMessage);
                     return;
                 }
-                if (response.Status == 0 || response.Status >= 500)
-                {
-                    // Not sent, and not the caller's problem to solve. It goes in the queue and
-                    // leaves with the next launch.
-                    Queue.Store(body);
-                    return;
-                }
+                // A failed flush is deliberately not queued. The session is cumulative and still
+                // in memory, so the next flush carries everything this one would have, and the
+                // quit writes it down once. Queueing each failure instead would put a dozen
+                // copies of one play on disk during an offline session, each without a server id,
+                // and every one of them would become its own play on reconnect.
+                if (response.Status == 0 || response.Status >= 500) return;
                 if (response.Status == 200)
                 {
                     var recorded = new PrototirUnityJson().Decode<SessionResponse>(response.Body);
@@ -188,8 +196,8 @@ namespace Prototir.Native
             }
             catch (Exception error)
             {
-                Queue.Store(body);
-                // Losing a session is not worth interrupting someone's game over.
+                // Same reasoning as above: still in memory, still going out at the next flush or
+                // at the quit. Losing a session is not worth interrupting someone's game over.
                 Debug.LogWarning($"Prototir: could not report this session ({error.Message}).");
             }
         }

@@ -160,11 +160,15 @@ Give the tester a way to act on it. Text they cannot select is a dead end, so of
 browser on this machine helps nobody, such as a headset. The sample does both. `PairingSucceeded` and `PairingFailed` cover the rest; `PairingFailed`
 also fires when a paired build is refused later, which means the tester revoked it.
 
-`Ready`, `Event` and `Score` accumulate one session rather than one request each. Call
-`PrototirSdk.FlushSessionAsync()` at a natural break, such as the end of a run. On quit there is no
-time to send anything, so the session is written under `Application.persistentDataPath` and sent at
-the next launch. That covers the tester playing on a plane as well: sessions carry their server id,
-so one arriving late updates its row rather than counting a second play.
+`Ready`, `Event` and `Score` accumulate one session rather than one request each, and the SDK
+reports it for you every 30 seconds while the game runs, and again when the window loses focus.
+You do not have to call anything. `PrototirSdk.FlushSessionAsync()` is there for a natural break,
+such as the end of a run, if you want the numbers to land sooner.
+
+Repeating costs nothing: the first report returns an id the rest carry, so the server updates one
+row rather than counting a play per report. On quit there is no time left to send, so whatever the
+last report missed is written under `Application.persistentDataPath` and goes out at the next
+launch. That covers the tester playing on a plane as well.
 
 `PrototirSdk.SendFeedbackAsync("...")` posts a comment as the tester who approved the build. No
 session is needed first, because approving the pairing is the stronger signal.
