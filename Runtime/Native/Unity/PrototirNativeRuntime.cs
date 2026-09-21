@@ -72,11 +72,13 @@ namespace Prototir.Native
             _flow = null;
             _configurationWarned = false;
 
-            // The boot-time drain has already been and gone, and it gave up because nothing knew
-            // where to send yet. This is the first moment that is true, so the queue gets its
-            // chance here too; otherwise a build that learns its prototype at runtime keeps every
-            // session it ever recorded and sends none of them. Cheap when the queue is empty.
+            // Everything that ran at boot has already been and gone, and it gave up because
+            // nothing knew which prototype this was. This is the first moment that is true, so
+            // the queue and the handshake both get their chance here too; otherwise a build that
+            // learns its prototype at runtime never reports a session and never switches its
+            // prototype on. Both are cheap when there is nothing to do.
             _ = SendPendingAsync(CancellationToken.None);
+            _ = HandshakeAsync(CancellationToken.None);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
