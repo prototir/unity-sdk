@@ -19,7 +19,7 @@ Project Setup window reports an incompatible editor as a blocking issue.
 In Unity Package Manager, choose **Add package from git URL** and use a tagged release:
 
 ```text
-https://github.com/prototir/unity-sdk.git#v0.1.0
+https://github.com/prototir/unity-sdk.git#v0.2.0
 ```
 
 For testing before the first tag is published, omit `#v0.1.0`. Pin a tag in production so an SDK
