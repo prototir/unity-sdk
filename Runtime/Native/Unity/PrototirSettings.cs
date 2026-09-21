@@ -13,7 +13,15 @@ namespace Prototir
     public sealed class PrototirSettings : ScriptableObject
     {
         public const string ResourceName = "PrototirSettings";
-        public const string DefaultApiBaseUrl = "https://prototir.com/api";
+        /// <summary>Where a downloadable build talks to Prototir.
+        ///
+        /// <para>Its own hostname, not <c>prototir.com/api</c>: the site serves no <c>/api</c>
+        /// path, so that default reached nothing and the whole native path was dead in
+        /// production until a real build was run against it. Not the Azure hostname behind it
+        /// either, which carries a generated id that changes if the app is recreated. This URL is
+        /// compiled into shipped executables that can never be updated, so it has to outlive the
+        /// infrastructure under it.</para></summary>
+        public const string DefaultApiBaseUrl = "https://api.prototir.com/api";
 
         [Tooltip("The slug in your prototype's URL: prototir.com/p/<slug>.")]
         [SerializeField] private string prototypeSlug = string.Empty;

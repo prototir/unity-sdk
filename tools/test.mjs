@@ -75,6 +75,24 @@ try {
   );
   callbacks[0]({ source: parent, data: { source: 'prototir', v: 1, type: 'storage:result', id: 4, value: 'hard' } });
   assert.deepEqual(sent.at(-1).callback.slice(0, 2), ['__PrototirBridge', 'OnPrototirStorageResult']);
+  // Where a downloadable build talks to Prototir. This URL is compiled into executables that can
+  // never be updated, so a slip back to a host that serves no /api, or to the generated Azure
+  // hostname that changes if the app is recreated, has to fail here rather than in the field.
+  const settings = readFileSync(
+    new URL('../Runtime/Native/Unity/PrototirSettings.cs', import.meta.url),
+    'utf8',
+  );
+  const defaultBase = /DefaultApiBaseUrl = "([^"]+)"/.exec(settings)?.[1];
+  assert.ok(defaultBase, 'PrototirSettings has no DefaultApiBaseUrl');
+  assert.ok(
+    !/^https:\/\/prototir\.com\//.test(defaultBase),
+    'prototir.com serves no /api path; the API has its own hostname',
+  );
+  assert.ok(
+    !/azurewebsites\.net/.test(defaultBase),
+    'the generated Azure hostname changes if the app is recreated',
+  );
+
   console.log('Unity package and protocol checks passed.');
 } finally {
   rmSync(root, { recursive: true, force: true });

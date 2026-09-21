@@ -20,6 +20,9 @@
 - Added a **Download Pairing** sample: a working pairing screen in one file, with no scene
   setup, including opening the approval page and copying the code. A game window has no
   selectable text, so a printed URL on its own leaves the tester retyping it off a screen.
+- The default API endpoint is now `https://api.prototir.com/api`. It was `prototir.com/api`,
+  which serves no `/api` path, so a downloadable build could not reach Prototir at all; the
+  whole native path was dead in production until a real build was run against it.
 - Added **Prototir > Create Settings**, and `PrototirSettings` for the prototype slug, API base URL
   and device label.
 - Added **Prototir > Export for Prototir (Web)** and **(Download)**, which build, zip and write
