@@ -90,7 +90,7 @@ namespace Prototir.Native
             if (!Session.HasAnythingToReport) return;
             if (Settings == null || !Settings.IsConfigured) return;
             if (string.IsNullOrEmpty(Token)) return;
-            Queue.Store(new PrototirUnityJson().Encode(Session.Snapshot()));
+            Queue.Store(Session.Snapshot().ToJson());
         }
 
         /// <summary>Sends what earlier runs left behind. Anything the server takes, or refuses in a
@@ -159,8 +159,7 @@ namespace Prototir.Native
             var token = Token;
             if (string.IsNullOrEmpty(token)) return; // Unpaired builds report nothing, by design.
 
-            var payload = Session.Snapshot();
-            var body = new PrototirUnityJson().Encode(payload);
+            var body = Session.Snapshot().ToJson();
             try
             {
                 var response = await new PrototirUnityHttp()

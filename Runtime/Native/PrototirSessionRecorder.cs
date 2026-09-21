@@ -16,6 +16,36 @@ namespace Prototir.Native
         /// <summary>Set once the server has given this session a row, so a later flush updates it
         /// instead of recording a second session for the same play.</summary>
         public string sessionId;
+
+        /// <summary>The session as the server's contract wants it.
+        ///
+        /// <para>Written by hand rather than through <c>JsonUtility</c>, which has no way to leave
+        /// a field out. That mattered: the server models the id as an optional GUID and the score
+        /// as an optional number, so an always-present <c>"sessionId": ""</c> was unparseable and
+        /// an always-present <c>"score": 0</c> would have recorded a real score of zero for every
+        /// play that never set one.</para>
+        ///
+        /// <para>Safe to build by hand because nothing here needs escaping: the numbers are
+        /// numbers, the id is server-issued, and event names are already normalized to lowercase
+        /// letters, digits and <c>_ . : -</c> before they can reach this.</para></summary>
+        public string ToJson()
+        {
+            var json = new System.Text.StringBuilder("{");
+            json.Append("\"durationMs\":").Append(durationMs);
+            json.Append(",\"eventCount\":").Append(eventCount);
+            if (hasScore) json.Append(",\"score\":").Append(score);
+            if (!string.IsNullOrEmpty(sessionId))
+                json.Append(",\"sessionId\":\"").Append(sessionId).Append('"');
+
+            json.Append(",\"signals\":[");
+            for (var index = 0; index < signals.Count; index++)
+            {
+                if (index > 0) json.Append(',');
+                json.Append("{\"name\":\"").Append(signals[index].name)
+                    .Append("\",\"count\":").Append(signals[index].count).Append('}');
+            }
+            return json.Append("]}").ToString();
+        }
     }
 
     [Serializable]

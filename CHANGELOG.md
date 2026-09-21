@@ -7,6 +7,11 @@
   build. A Web build strips all of it at compile time.
 - Added `PrototirSdk.IsPaired`, `BeginPairingAsync`, `CancelPairing`, `Unpair`, `SendFeedbackAsync`
   and `FlushSessionAsync`, plus the `PairingStarted`, `PairingSucceeded` and `PairingFailed` events.
+- A session is serialized to the exact contract: the server models its id and score as
+  optional, and an always-present `"sessionId": ""` could not be parsed. The endpoint
+  answered 500, the queue treats 5xx as retry-later, and so every session ever recorded
+  piled up on disk and none were sent, silently. An always-present `"score": 0` would also
+  have put a nought on a leaderboard for every play that never scored.
 - `Configure` now drains the session queue. The drain ran only at boot, before a runtime
   `Configure` could say where to send, so a build that learned its prototype at runtime kept
   every session it ever recorded and sent none of them.
