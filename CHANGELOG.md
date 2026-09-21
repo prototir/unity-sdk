@@ -7,6 +7,9 @@
   build. A Web build strips all of it at compile time.
 - Added `PrototirSdk.IsPaired`, `BeginPairingAsync`, `CancelPairing`, `Unpair`, `SendFeedbackAsync`
   and `FlushSessionAsync`, plus the `PairingStarted`, `PairingSucceeded` and `PairingFailed` events.
+- `Configure` now drains the session queue. The drain ran only at boot, before a runtime
+  `Configure` could say where to send, so a build that learned its prototype at runtime kept
+  every session it ever recorded and sent none of them.
 - Added an on-disk session queue: a play is written down on quit and sent at the next launch, so
   closing the game or being offline no longer loses it. This also removes a hang on quit, where
   waiting for a `UnityWebRequest` blocked the very player loop that had to complete it.

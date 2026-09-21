@@ -63,6 +63,12 @@ namespace Prototir.Native
             _settings = settings;
             _flow = null;
             _configurationWarned = false;
+
+            // The boot-time drain has already been and gone, and it gave up because nothing knew
+            // where to send yet. This is the first moment that is true, so the queue gets its
+            // chance here too; otherwise a build that learns its prototype at runtime keeps every
+            // session it ever recorded and sends none of them. Cheap when the queue is empty.
+            _ = SendPendingAsync(CancellationToken.None);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
