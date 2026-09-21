@@ -103,6 +103,32 @@ try {
     'the injected slug file must be named prototir-prototype.json, which is what the API writes',
   );
 
+  // Reporting is gated on a token that does not exist until pairing is approved, so every flush
+  // and every drain before that point gives up immediately. If approval does not re-trigger them,
+  // the session the tester just finished waits for the next 30s heartbeat, and a tester who quits
+  // inside that window has it written to the queue and sent only on the following launch. That is
+  // a creator watching their first play never arrive, and it is invisible from the code: the same
+  // omission has already shipped twice here, once for the queue at boot and once for Configure.
+  const runtime = readFileSync(
+    new URL('../Runtime/Native/Unity/PrototirNativeRuntime.cs', import.meta.url),
+    'utf8',
+  );
+  const approved = runtime.slice(
+    runtime.indexOf('if (result.Outcome == PrototirPairingOutcome.Approved)'),
+    runtime.indexOf('_state = result.Outcome == PrototirPairingOutcome.Cancelled'),
+  );
+  assert.ok(approved.length > 0, 'the approved branch of BeginPairingAsync moved');
+  assert.match(
+    approved,
+    /SendPendingAsync\(/,
+    'approving a pairing must drain the queue: it is the first moment those sessions can be sent',
+  );
+  assert.match(
+    approved,
+    /FlushAsync\(/,
+    'approving a pairing must report the session in progress rather than wait for a heartbeat',
+  );
+
   console.log('Unity package and protocol checks passed.');
 } finally {
   rmSync(root, { recursive: true, force: true });
