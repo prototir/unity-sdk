@@ -13,6 +13,10 @@
 - Added `PrototirSdk.Configure(slug, apiBaseUrl, deviceLabel)` for a build that learns its
   prototype at runtime, and `PrototirSdk.PairingState` for drawing the difference between "not
   paired" and "waiting for approval". The Godot addon already had both.
+- `PairingState` is derived from the stored token rather than remembered. A static field does not
+  survive the process that set it, so a build paired yesterday started today reporting
+  `NotPaired` while it held a valid token, and a game drawing from it would have shown a pairing
+  prompt to someone already paired. The rule now lives beside the protocol and is tested.
 - Added a **Download Pairing** sample: a working pairing screen in one file, with no scene
   setup, including opening the approval page and copying the code. A game window has no
   selectable text, so a printed URL on its own leaves the tester retyping it off a screen.

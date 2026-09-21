@@ -6,15 +6,6 @@ using UnityEngine;
 
 namespace Prototir.Native
 {
-    public enum PrototirPairingState
-    {
-        NotPaired,
-        Requesting,
-        AwaitingApproval,
-        Paired,
-        Failed,
-    }
-
     /// <summary>Everything a downloadable build needs at runtime, in one place: configuration, the
     /// stored token, the session being accumulated, and the pairing state a game draws.
     ///
@@ -41,7 +32,11 @@ namespace Prototir.Native
         public static event Action PairingSucceeded;
         public static event Action<string> PairingFailed;
 
-        public static PrototirPairingState PairingState { get; private set; } = PrototirPairingState.NotPaired;
+        private static PrototirPairingState _state = PrototirPairingState.NotPaired;
+
+        /// <summary>Where this build stands. See <see cref="PrototirPairing.Resting"/> for why the
+        /// answer cannot come from memory alone.</summary>
+        public static PrototirPairingState PairingState => PrototirPairing.Resting(_state, IsPaired);
 
         public static bool IsPaired => !string.IsNullOrEmpty(Token);
 
@@ -204,7 +199,7 @@ namespace Prototir.Native
             {
                 if (PairingState is PrototirPairingState.Requesting or PrototirPairingState.AwaitingApproval)
                     return Fail("This build is already waiting to be paired.");
-                PairingState = PrototirPairingState.Requesting;
+                _state = PrototirPairingState.Requesting;
             }
 
             _pairingCancel?.Dispose();
@@ -217,7 +212,7 @@ namespace Prototir.Native
                 return Fail("Prototir would not start a pairing for this prototype. Check the slug " +
                             "and that feedback is turned on for it.");
 
-            PairingState = PrototirPairingState.AwaitingApproval;
+            _state = PrototirPairingState.AwaitingApproval;
             PairingStarted?.Invoke(request);
 
             var result = await Flow()
@@ -227,12 +222,12 @@ namespace Prototir.Native
             if (result.Outcome == PrototirPairingOutcome.Approved)
             {
                 Tokens.Write(Settings.PrototypeSlug, result.Token);
-                PairingState = PrototirPairingState.Paired;
+                _state = PrototirPairingState.Paired;
                 PairingSucceeded?.Invoke();
                 return result;
             }
 
-            PairingState = result.Outcome == PrototirPairingOutcome.Cancelled
+            _state = result.Outcome == PrototirPairingOutcome.Cancelled
                 ? PrototirPairingState.NotPaired
                 : PrototirPairingState.Failed;
             if (result.Outcome != PrototirPairingOutcome.Cancelled)
@@ -243,14 +238,14 @@ namespace Prototir.Native
         public static void CancelPairing()
         {
             _pairingCancel?.Cancel();
-            PairingState = IsPaired ? PrototirPairingState.Paired : PrototirPairingState.NotPaired;
+            _state = IsPaired ? PrototirPairingState.Paired : PrototirPairingState.NotPaired;
         }
 
         public static void Unpair()
         {
             var slug = Settings?.PrototypeSlug;
             if (!string.IsNullOrEmpty(slug)) Tokens.Clear(slug);
-            PairingState = PrototirPairingState.NotPaired;
+            _state = PrototirPairingState.NotPaired;
         }
 
         /// <summary>Posts feedback as the tester who approved this build.
@@ -331,7 +326,7 @@ namespace Prototir.Native
 
         private static PrototirPairingResult Fail(string message)
         {
-            PairingState = PrototirPairingState.Failed;
+            _state = PrototirPairingState.Failed;
             PairingFailed?.Invoke(message);
             return new PrototirPairingResult
             {
