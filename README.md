@@ -144,8 +144,16 @@ Prototir, or an installer Prototir cannot write into. A game that decides its pr
 can call `PrototirSdk.Configure("your-slug")`. The injected slug wins over the settings asset,
 because it travelled with that exact download.
 
-Import the **Download Pairing** sample from the Package Manager for a working pairing screen you
-can run immediately, then rebuild it in whatever UI your game already uses.
+For a ready-to-use pairing screen over your game, call:
+
+```csharp
+PrototirSdk.ShowPairingScreen();
+```
+
+It shows the code and a scannable QR, opens the approval link, and handles approval, failure,
+disconnecting and an already connected build. The screen uses Prototir's dark colors and requires
+no prefab or scene setup. It is available in the Editor and in native builds. You can still import
+the **Download Pairing** sample or build your own UI from the pairing events.
 
 ```csharp
 void Start()
@@ -156,9 +164,8 @@ void Start()
 }
 ```
 
-The SDK draws nothing. It cannot know your art direction, your input model, or whether you are in
-VR, so it hands you the code, the verification link and a ready-made QR (`request.QrSvg`) and
-leaves the screen to you.
+The SDK only draws when you call `ShowPairingScreen()`. For your own UI, it hands you the code, the
+verification link and a ready-made QR (`request.QrSvg`).
 
 Give the tester a way to act on it. Text they cannot select is a dead end, so offer
 `Application.OpenURL(request.VerificationUrl)` on desktop, and the QR or the bare code where a

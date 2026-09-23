@@ -19,7 +19,11 @@ namespace Prototir.Native
 
         public PrototirUnityHttp(int timeoutSeconds = 20) => _timeoutSeconds = timeoutSeconds;
 
-        public async Task<PrototirHttpResponse> PostJsonAsync(
+        public Task<PrototirHttpResponse> PostJsonAsync(
+            string url, string json, string bearer, CancellationToken ct) =>
+            PrototirNativeTicker.RunOnMainThread(() => SendOnMainThreadAsync(url, json, bearer, ct));
+
+        private async Task<PrototirHttpResponse> SendOnMainThreadAsync(
             string url, string json, string bearer, CancellationToken ct)
         {
             using var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST)
@@ -74,8 +78,15 @@ namespace Prototir.Native
     /// per prototype, so unpairing one build cannot disturb another.</para></summary>
     public sealed class PrototirUnityTokenStore : IPrototirTokenStore
     {
-        private static string Directory =>
-            Path.Combine(Application.persistentDataPath, "prototir", "pairings");
+        private readonly string _directory;
+
+        /// <summary>Create on Unity's main thread. The path is captured once so reads and writes
+        /// after an async pairing continuation never call Unity's API from a worker.</summary>
+        public PrototirUnityTokenStore() : this(
+            Path.Combine(Application.persistentDataPath, "prototir", "pairings")) { }
+
+        internal PrototirUnityTokenStore(string directory) =>
+            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
 
         public string Read(string slug)
         {
@@ -92,7 +103,7 @@ namespace Prototir.Native
         {
             try
             {
-                System.IO.Directory.CreateDirectory(Directory);
+                System.IO.Directory.CreateDirectory(_directory);
                 File.WriteAllText(PathFor(slug), token);
             }
             catch (IOException) { }
@@ -112,13 +123,13 @@ namespace Prototir.Native
 
         /// <summary>A slug reaches this from configuration, so it is kept to characters that
         /// cannot escape the directory rather than trusted to be well formed.</summary>
-        private static string PathFor(string slug)
+        private string PathFor(string slug)
         {
             var safe = new string(System.Linq.Enumerable.ToArray(
                 System.Linq.Enumerable.Where(slug ?? string.Empty,
                     c => char.IsLetterOrDigit(c) || c == '-' || c == '_')));
             if (safe.Length == 0) safe = "default";
-            return Path.Combine(Directory, safe + ".token");
+            return Path.Combine(_directory, safe + ".token");
         }
     }
 

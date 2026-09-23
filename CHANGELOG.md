@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added `PrototirSdk.ShowPairingScreen()` for downloadable builds: a built-in overlay with the
+  code, scannable QR, approval state, success, failure, and disconnect action. Custom UI through
+  the pairing events remains supported.
+- Native HTTP requests now return to Unity's main thread before creating `UnityWebRequest`.
+  Pairing polling and session reports can resume on a worker after protocol awaits.
+- Pairing token and pending-session paths are captured on Unity's main thread. Approval can
+  save the token after polling resumes on a worker without calling `persistentDataPath` there.
 - A downloadable build now tells Prototir which build it is at launch, so a download-only
   prototype switches on the first time anyone runs it. This used to require pairing, which
   asked a creator to link a build to their account before their own download counted for

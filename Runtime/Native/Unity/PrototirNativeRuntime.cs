@@ -58,12 +58,22 @@ namespace Prototir.Native
         }
 
         private static PrototirSettings Settings => _settings ??= PrototirSettings.Load();
-        private static IPrototirTokenStore Tokens => _tokens ??= new PrototirUnityTokenStore();
+        private static IPrototirTokenStore Tokens => _tokens ??
+            throw new InvalidOperationException("Prototir's Unity runtime has not started.");
         private static PrototirSessionRecorder Session =>
             _session ??= new PrototirSessionRecorder(() => DateTimeOffset.UtcNow);
 
-        private static PrototirSessionQueue Queue => _queue ??= new PrototirSessionQueue(
-            Path.Combine(Application.persistentDataPath, "prototir", "pending"));
+        private static PrototirSessionQueue Queue => _queue ??
+            throw new InvalidOperationException("Prototir's Unity runtime has not started.");
+
+        /// <summary>Capture Unity's persistent directory in the ticker's Awake, before async
+        /// pairing and reporting can resume on worker threads.</summary>
+        internal static void InitializeStorage(string persistentDataPath)
+        {
+            var root = Path.Combine(persistentDataPath, "prototir");
+            _tokens = new PrototirUnityTokenStore(Path.Combine(root, "pairings"));
+            _queue = new PrototirSessionQueue(Path.Combine(root, "pending"));
+        }
 
         /// <summary>Overrides the settings asset, for a game that decides its slug at runtime.</summary>
         public static void Configure(PrototirSettings settings)

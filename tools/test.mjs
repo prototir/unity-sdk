@@ -129,6 +129,35 @@ try {
     'approving a pairing must report the session in progress rather than wait for a heartbeat',
   );
 
+  const pairingScreen = readFileSync(
+    new URL('../Runtime/Native/Unity/PrototirPairingScreen.cs', import.meta.url), 'utf8');
+  assert.match(pairingScreen, /^#if !UNITY_WEBGL \|\| UNITY_EDITOR/);
+  assert.match(pairingScreen, /PrototirQrSvg\.TryDecode\(svg, out var modules\)/);
+  assert.match(runtime, /public static event Action<PrototirPairingRequest> PairingStarted/);
+  const sdk = readFileSync(new URL('../Runtime/PrototirSdk.cs', import.meta.url), 'utf8');
+  assert.match(sdk, /public static void ShowPairingScreen\(\)/);
+  assert.match(sdk, /#if !UNITY_WEBGL \|\| UNITY_EDITOR\s+Native\.PrototirPairingScreen\.Show\(\)/);
+  const unityHttp = readFileSync(
+    new URL('../Runtime/Native/Unity/PrototirUnityNative.cs', import.meta.url), 'utf8');
+  assert.match(
+    unityHttp,
+    /PostJsonAsync\([\s\S]*?PrototirNativeTicker\.RunOnMainThread\(\(\) => SendOnMainThreadAsync\(/,
+    'UnityWebRequest must start on the player loop after protocol awaits move to a worker',
+  );
+  const ticker = readFileSync(
+    new URL('../Runtime/Native/Unity/PrototirNativeTicker.cs', import.meta.url), 'utf8');
+  assert.match(
+    ticker,
+    /private void Awake\(\) => PrototirNativeRuntime\.InitializeStorage\(Application\.persistentDataPath\)/,
+    'persistentDataPath must be captured on Unity’s main thread before pairing can resume on a worker',
+  );
+  assert.doesNotMatch(runtime, /Application\.persistentDataPath/,
+    'async runtime code must use the captured storage paths instead of reading Unity’s path on a worker');
+  assert.match(unityHttp, /private readonly string _directory;/,
+    'the token store must retain its directory instead of looking it up during async writes');
+  assert.match(unityHttp, /return Path\.Combine\(_directory, safe \+ "\.token"\);/,
+    'token paths must use the captured directory after approval resumes on a worker');
+
   console.log('Unity package and protocol checks passed.');
 } finally {
   rmSync(root, { recursive: true, force: true });

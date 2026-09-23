@@ -6,14 +6,11 @@ namespace Prototir.Samples
     /// <summary>A working pairing screen for a downloadable build, in one file with no scene
     /// setup: drop this component on any GameObject and run.
     ///
-    /// <para>The SDK draws nothing itself, because it cannot know your art direction, your input
-    /// model, or whether you are in VR. This sample exists so you can see the whole flow work before
-    /// you build your own, and so there is something to point at when the answer is "draw
-    /// it yourself".</para>
+    /// <para>For a finished overlay, call PrototirSdk.ShowPairingScreen(). This sample shows how
+    /// to use the events when a game needs its own UI.</para>
     ///
     /// <para><b>IMGUI on purpose.</b> It needs no canvas, no prefab and no fonts, which makes it
-    /// a sample rather than a component you should ship. Read it, then rebuild it in whatever UI
-    /// your game already uses.</para></summary>
+    /// a minimal example. Read it, then rebuild it in whatever UI your game already uses.</para></summary>
     public sealed class PrototirPairingPanel : MonoBehaviour
     {
         [Tooltip("Where the panel sits. Only affects this sample.")]

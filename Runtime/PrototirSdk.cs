@@ -114,10 +114,18 @@ namespace Prototir
             Native.PrototirNativeRuntime.IsPaired;
 #endif
 
+        /// <summary>Show the built-in pairing overlay over the running game. Call it again to
+        /// bring back the same screen if it is already open. Games with their own UI can use the
+        /// pairing events below instead.</summary>
+        public static void ShowPairingScreen()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Native.PrototirPairingScreen.Show();
+#endif
+        }
+
         /// <summary>Asks Prototir for a pairing code and waits for a tester to approve it on
-        /// prototir.com. Subscribe to <see cref="PairingStarted"/> to show the code, the link and
-        /// the QR: the SDK draws nothing, because it cannot know your art direction, your input
-        /// model, or whether you are in VR.</summary>
+        /// prototir.com. Subscribe to <see cref="PairingStarted"/> to draw a custom screen.</summary>
         public static Task<Native.PrototirPairingResult> BeginPairingAsync(
             CancellationToken cancellationToken = default) =>
 #if UNITY_WEBGL && !UNITY_EDITOR

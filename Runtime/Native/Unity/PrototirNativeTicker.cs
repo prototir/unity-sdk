@@ -1,5 +1,7 @@
 using System.Collections;
+using System;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Prototir.Native
@@ -15,14 +17,30 @@ namespace Prototir.Native
     /// is what keeps one play reporting as one session across a level change.</para></summary>
     internal sealed class PrototirNativeTicker : MonoBehaviour
     {
+        private static PrototirMainThread _mainThread;
+
         internal static void Install()
         {
+            _mainThread = new PrototirMainThread(Thread.CurrentThread.ManagedThreadId);
             var host = new GameObject(nameof(PrototirNativeTicker))
             {
                 hideFlags = HideFlags.HideAndDontSave,
             };
             host.AddComponent<PrototirNativeTicker>();
         }
+
+        /// <summary>The protocol deliberately uses ConfigureAwait(false), so later requests may
+        /// start on a worker. UnityWebRequest must be created and driven by the player loop.</summary>
+        internal static Task<T> RunOnMainThread<T>(Func<Task<T>> work)
+        {
+            if (_mainThread == null)
+                throw new InvalidOperationException("Prototir's Unity runtime has not started.");
+            return _mainThread.Run(work);
+        }
+
+        private void Awake() => PrototirNativeRuntime.InitializeStorage(Application.persistentDataPath);
+
+        private void Update() => _mainThread?.Drain();
 
         private void Start() => StartCoroutine(Report());
 
