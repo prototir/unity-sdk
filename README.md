@@ -98,9 +98,10 @@ builds. They capture the current view, drop a pin on that screenshot and write a
 | `ReviewVisibilityChanged` | Fires with `true`/`false` so you can pause audio or your own input. |
 
 Inside the Prototir player, Prototir draws **Feedback** in its own control bar and the component
-stays out of the way. Anywhere else it shows the Prototir mark, which opens a menu with
-**Screenshot & comment**, **Comments** and **Open on Prototir** - the same menu testers see in a
-web build, so the experience does not change between the two.
+stays out of the way. Anywhere else it shows the Prototir mark, which opens an icon menu with
+**Screenshot** and **Review files** while offline, or **Screenshot** and **Comments** when
+connected to Prototir. **Open on Prototir** appears when configured. Choosing Screenshot
+captures the frame and opens the focused composer; Review files contains import and export.
 
 Screenshots are taken with `ScreenCapture.CaptureScreenshotAsTexture` after `WaitForEndOfFrame`, so
 they match what the player saw. While the panel is open the component clears
