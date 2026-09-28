@@ -270,7 +270,7 @@ namespace Prototir.Native
 
         private string Note() => _view switch
         {
-            View.Idle => "Until then this build reports nothing: there is nobody to attribute a play to.",
+            View.Idle => "Play sessions and feedback are sent once you connect.",
             View.Approval => _note,
             View.Connected => "You can disconnect it here, or from your account settings on prototir.com.",
             View.Failed => "Nothing was recorded. You can try again, or keep playing without pairing.",

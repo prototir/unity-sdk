@@ -15,8 +15,8 @@ namespace Prototir.Native
         private string _text = "", _scope = "", _sentText = "", _clientId = "", _status = "";
         private bool _visible, _posting;
         private PrototirPairingScreen _pairing;
-        private Texture2D _pixel, _field, _accent;
-        private GUIStyle _heading, _body, _input, _button;
+        private Texture2D _pixel, _field, _accent, _closeIcon;
+        private GUIStyle _heading, _body, _input, _button, _closeButton;
         public event Action Closed;
 
         public static PrototirFeedbackScreen Show(string initialText = "")
@@ -92,10 +92,9 @@ namespace Prototir.Native
             GUI.Label(new Rect(card.x + 24, card.y + 24, 360, 32), "Give feedback", _heading);
             GUI.enabled = !_posting;
             var close = new Rect(card.xMax - 48, card.y + 12, 36, 36);
-            if (GUI.Button(close, new GUIContent("", "Close feedback"))) Close();
-            // Lucide X geometry, centred independently of font metrics.
-            Line(close.center + new Vector2(-6, -6), close.center + new Vector2(6, 6));
-            Line(close.center + new Vector2(-6, 6), close.center + new Vector2(6, -6));
+            if (GUI.Button(close, new GUIContent("", "Close feedback"), _closeButton)) Close();
+            // Rasterised Lucide X paths avoid font metrics and scaled GUI rotation pivots.
+            GUI.DrawTexture(new Rect(close.center.x - 10, close.center.y - 10, 20, 20), _closeIcon);
             GUI.Label(new Rect(card.x + 24, card.y + 67, 422, 42), "What worked? What would you change?", _body);
             _text = GUI.TextArea(new Rect(card.x + 24, card.y + 110, 422, 136), _text, 2000, _input);
             GUI.Label(new Rect(card.x + 24, card.y + 257, 422, 48), "Comments are visible to everyone who can access this prototype. Sign-in happens in your browser.", _body);
@@ -116,19 +115,34 @@ namespace Prototir.Native
             _button = new GUIStyle(GUI.skin.button) { fontSize = 14, fontStyle = FontStyle.Bold };
             _button.normal.background = _accent; _button.normal.textColor = new Color(0.06f, 0.09f, 0.16f);
             _button.hover = _button.normal; _button.active = _button.normal;
+            _closeButton = new GUIStyle(_button); _closeButton.normal.background = _field;
+            _closeButton.hover = _closeButton.normal; _closeButton.active = _closeButton.normal;
+            _closeIcon = CloseTexture();
         }
         private static Texture2D Texture(Color color) { var tex = new Texture2D(1, 1); tex.SetPixel(0, 0, color); tex.Apply(); return tex; }
         private void Fill(Rect rect, Color color) { var old = GUI.color; GUI.color = color; GUI.DrawTexture(rect, _pixel); GUI.color = old; }
-        private void Line(Vector2 a, Vector2 b)
+        private static Texture2D CloseTexture()
         {
-            var old = GUI.matrix; GUIUtility.RotateAroundPivot(Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg, a);
-            Fill(new Rect(a.x, a.y - 1, Vector2.Distance(a, b), 2), Color.white); GUI.matrix = old;
+            var tex = new Texture2D(24, 24, TextureFormat.RGBA32, false);
+            for (var y = 0; y < 24; y++) for (var x = 0; x < 24; x++)
+            {
+                var point = new Vector2(x + 0.5f, y + 0.5f);
+                var distance = Mathf.Min(SegmentDistance(point, new Vector2(6, 6), new Vector2(18, 18)),
+                    SegmentDistance(point, new Vector2(6, 18), new Vector2(18, 6)));
+                tex.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(1.5f - distance)));
+            }
+            tex.Apply(); return tex;
+        }
+        private static float SegmentDistance(Vector2 point, Vector2 a, Vector2 b)
+        {
+            var delta = b - a;
+            return Vector2.Distance(point, a + Mathf.Clamp01(Vector2.Dot(point - a, delta) / delta.sqrMagnitude) * delta);
         }
         private void OnDestroy()
         {
             if (_instance == this) _instance = null;
             if (_pairing != null) _pairing.Closed -= PairingClosed;
-            if (_pixel != null) Destroy(_pixel); if (_field != null) Destroy(_field); if (_accent != null) Destroy(_accent);
+            if (_pixel != null) Destroy(_pixel); if (_field != null) Destroy(_field); if (_accent != null) Destroy(_accent); if (_closeIcon != null) Destroy(_closeIcon);
         }
     }
 }
