@@ -35,9 +35,9 @@
       "path": "Samples~/PrototirWebTemplate"
     },
     {
-      "displayName": "Download Pairing",
-      "description": "A working pairing screen for a downloadable build: shows the code, the link, and posts feedback once approved.",
-      "path": "Samples~/DownloadPairing"
+      "displayName": "Native Pairing",
+      "description": "A working pairing screen for a native build: shows the code, the link, and posts feedback once approved.",
+      "path": "Samples~/NativePairing"
     }
   ]
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Prototir.Editor
 {
-    /// <summary>Creates the settings asset a downloadable build reads its slug from.
+    /// <summary>Creates the settings asset a native build reads its slug from.
     ///
     /// <para>It has to live in <c>Resources</c>, and it has to be named exactly
     /// <see cref="PrototirSettings.ResourceName"/>, or <see cref="PrototirSettings.Load"/> will not
@@ -42,7 +42,7 @@ namespace Prototir.Editor
             AssetDatabase.SaveAssets();
             Debug.Log(
                 "Prototir: created Assets/Resources/PrototirSettings.asset. Fill in the slug from " +
-                "your prototype's URL, prototir.com/p/<slug>, before exporting a download.");
+                "your prototype's URL, prototir.com/p/<slug>, before exporting a native build.");
             return asset;
         }
     }

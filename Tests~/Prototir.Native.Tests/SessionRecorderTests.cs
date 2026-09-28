@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Prototir.Native.Tests;
 
-/// <summary>What a download reports about a play. The server decides whether a session is "real"
+/// <summary>What a native build reports about a play. The server decides whether a session is "real"
 /// (3s and at least one event) and that gate controls whether feedback and ranking count it, so
 /// under-reporting here quietly costs a creator their plays.</summary>
 public class SessionRecorderTests

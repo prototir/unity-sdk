@@ -50,10 +50,13 @@ Run `node tools/export-validator.mjs <export-folder>` for a local structural pre
 
 ## Project setup assistant
 
-Open **Prototir > Project Setup** before the first build. The SDK checks the installed Web module,
-active target, enabled scenes, threads, **Run In Background**, development and profiling flags,
-debug symbols, PWA template, edge-to-edge player template, Unity data caching, and product name.
-Blocking issues stop a Web build; recommendations remain visible without preventing export.
+Open **Prototir > Project Setup** before the first build and choose **Web** or **Native** at the
+top. The choice is saved per project. Every build is checked for enabled scenes, development and
+profiling flags, and product name. **Web** adds the installed Web module, threads, **Run In
+Background**, debug symbols, PWA template, edge-to-edge player template, and Unity data caching.
+**Native** checks only that this machine's desktop build support is installed and that the active
+build target is Windows, macOS or Linux. Blocking issues stop a Web build; recommendations remain
+visible without preventing export.
 **Fix all available** only changes settings for which the supported Prototir profile has an
 unambiguous value. It enables **Run In Background**, installs the bundled Prototir template into
 `Assets/WebGLTemplates/Prototir`, and selects it for Web builds. Installing Unity's Web Build

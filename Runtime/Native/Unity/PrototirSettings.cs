@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace Prototir
 {
-    /// <summary>Where a downloadable build learns which prototype it is.
+    /// <summary>Where a native build learns which prototype it is.
     ///
     /// <para>A Web export has none of this: the page it runs in already knows the prototype, and
-    /// the browser path keeps taking its context from there. A download has no page, so the slug
+    /// the browser path keeps taking its context from there. A native build has no page, so the slug
     /// has to travel inside the build.</para>
     ///
     /// <para>Loaded from <c>Resources</c> so it ships automatically, without the creator having
@@ -15,7 +15,7 @@ namespace Prototir
     public sealed class PrototirSettings : ScriptableObject
     {
         public const string ResourceName = "PrototirSettings";
-        /// <summary>Where a downloadable build talks to Prototir.
+        /// <summary>Where a native build talks to Prototir.
         ///
         /// <para>Its own hostname, not <c>prototir.com/api</c>: the site serves no <c>/api</c>
         /// path, so that default reached nothing and the whole native path was dead in
@@ -85,7 +85,7 @@ namespace Prototir
         /// <para><b>Why this outranks the asset.</b> The slug does not exist until the prototype
         /// does, and the prototype does not exist until a build has been uploaded to it, so the
         /// first export a creator makes cannot possibly contain the right value. Prototir knows it
-        /// at upload and writes it in, which means a downloaded build reports back with nothing
+        /// at upload and writes it in, which means a native build reports back with nothing
         /// set by hand. Where the two disagree, the one that travelled with this exact download is
         /// the one describing this exact download.</para>
         ///

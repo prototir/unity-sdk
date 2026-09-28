@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Prototir.Samples
 {
-    /// <summary>A working pairing screen for a downloadable build, in one file with no scene
+    /// <summary>A working pairing screen for a native build, in one file with no scene
     /// setup: drop this component on any GameObject and run.
     ///
     /// <para>For a finished overlay, call PrototirSdk.ShowPairingScreen(). This sample shows how
@@ -128,7 +128,7 @@ namespace Prototir.Samples
         private async void SendFeedback()
         {
             _message = "Sending...";
-            var sent = await PrototirSdk.SendFeedbackAsync("Hello from a downloaded build.");
+            var sent = await PrototirSdk.SendFeedbackAsync("Hello from a native build.");
             _message = sent ? "Feedback posted on the prototype page." : "That feedback was not accepted.";
         }
 

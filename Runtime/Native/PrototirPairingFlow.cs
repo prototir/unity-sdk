@@ -41,9 +41,9 @@ namespace Prototir.Native
 
     /// <summary>The device code flow, with no engine in it.
     ///
-    /// <para>A downloaded build has no browser session: it shows a code, the tester approves it on
+    /// <para>A native build has no browser session: it shows a code, the tester approves it on
     /// prototir.com, and the build polls until a token comes back. Loopback redirects and custom
-    /// URI schemes were both rejected for this, because a downloaded build is unsigned and opening
+    /// URI schemes were both rejected for this, because a native build is unsigned and opening
     /// a socket trips a firewall prompt at the worst moment, while nothing registers a URI scheme
     /// for a zip.</para></summary>
     public sealed class PrototirPairingFlow

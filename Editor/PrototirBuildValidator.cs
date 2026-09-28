@@ -8,7 +8,8 @@ using UnityEngine;
 
 namespace Prototir.Editor
 {
-    /// <summary>Rejects build settings and output shapes outside the first supported profile.</summary>
+    /// <summary>Rejects Web build settings and output shapes outside the supported profile, and
+    /// stamps every build, Web or native, with its build id.</summary>
     public sealed class PrototirBuildValidator : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
         public int callbackOrder => 1000;
@@ -18,7 +19,7 @@ namespace Prototir.Editor
             if (report.summary.platform != BuildTarget.WebGL) return;
             if ((report.summary.options & BuildOptions.Development) != 0)
                 throw new BuildFailedException("Prototir accepts Unity Web release builds, not Development builds.");
-            var issues = PrototirProjectSetup.FindIssues();
+            var issues = PrototirProjectSetup.FindIssues(PrototirTarget.Web);
             foreach (var warning in issues.Where(issue => issue.Severity == PrototirIssueSeverity.Warning))
                 UnityEngine.Debug.LogWarning($"Prototir setup: {warning.Title}. {warning.Detail}");
             var errors = issues.Where(issue => issue.Severity == PrototirIssueSeverity.Error).ToArray();
@@ -30,7 +31,7 @@ namespace Prototir.Editor
 
         public void OnPostprocessBuild(BuildReport report)
         {
-            // Written for every target, not just Web: a downloadable build is the case the id
+            // Written for every target, not just Web: a native build is the case the id
             // exists for (D43). outputPath is the executable for a desktop player and the folder
             // for a Web export, so the sidecar goes beside whichever it is.
             var directory = report.summary.platform == BuildTarget.WebGL

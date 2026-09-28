@@ -15,6 +15,15 @@ namespace Prototir.Editor
         Error
     }
 
+    /// <summary>What the creator is building for Prototir. A prototype can ship both, but each
+    /// build is one or the other, and the checks that matter are completely different: the Web
+    /// profile is about the sandbox, a native build is a desktop player with none of those rules.</summary>
+    internal enum PrototirTarget
+    {
+        Web,
+        Native
+    }
+
     internal sealed class PrototirSetupIssue
     {
         internal string Id { get; }
@@ -38,7 +47,7 @@ namespace Prototir.Editor
         }
     }
 
-    /// <summary>Checks and repairs settings required by the supported Prototir Unity Web profile.</summary>
+    /// <summary>Checks and repairs the settings a Prototir Web or native build needs.</summary>
     [InitializeOnLoad]
     public sealed class PrototirProjectSetup : EditorWindow
     {
@@ -60,7 +69,25 @@ namespace Prototir.Editor
             window.Show();
         }
 
-        internal static IReadOnlyList<PrototirSetupIssue> FindIssues()
+        private const string TargetKey = "Prototir.ProjectSetup.Target";
+
+        /// <summary>The target this project is set up for, kept in the project's UserSettings
+        /// folder so it follows the project rather than the machine. Until someone picks, it is
+        /// read off the active build target, which is what the creator last built for.</summary>
+        internal static PrototirTarget Target
+        {
+            get
+            {
+                var stored = EditorUserSettings.GetConfigValue(TargetKey);
+                if (Enum.TryParse(stored, out PrototirTarget target)) return target;
+                return IsDesktop(EditorUserBuildSettings.activeBuildTarget) ? PrototirTarget.Native : PrototirTarget.Web;
+            }
+            set => EditorUserSettings.SetConfigValue(TargetKey, value.ToString());
+        }
+
+        internal static IReadOnlyList<PrototirSetupIssue> FindIssues() => FindIssues(Target);
+
+        internal static IReadOnlyList<PrototirSetupIssue> FindIssues(PrototirTarget target)
         {
             var issues = new List<PrototirSetupIssue>();
             var major = ParseMajorVersion(Application.unityVersion);
@@ -69,27 +96,8 @@ namespace Prototir.Editor
                 issues.Add(new PrototirSetupIssue(
                     "unity-version",
                     "Unity 6 is required",
-                    $"This project uses Unity {Application.unityVersion}. The first supported profile is Unity 6 Web.",
+                    $"This project uses Unity {Application.unityVersion}. Prototir supports Unity 6 and later.",
                     PrototirIssueSeverity.Error));
-            }
-
-            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL))
-            {
-                issues.Add(new PrototirSetupIssue(
-                    "web-module",
-                    "Web Build Support is missing",
-                    "Install Web Build Support for this editor version through Unity Hub.",
-                    PrototirIssueSeverity.Error));
-            }
-
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
-            {
-                issues.Add(new PrototirSetupIssue(
-                    "build-target",
-                    "Web is not the active build target",
-                    "Switching now avoids a long platform switch when the first Prototir build starts.",
-                    PrototirIssueSeverity.Warning,
-                    () => EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL)));
             }
 
             if (!EditorBuildSettings.scenes.Any(scene => scene.enabled && File.Exists(scene.path)))
@@ -105,11 +113,50 @@ namespace Prototir.Editor
                     string.IsNullOrWhiteSpace(activeScenePath) ? null : AddOpenSceneToBuild));
             }
 
+            if (EditorUserBuildSettings.development || EditorUserBuildSettings.allowDebugging ||
+                EditorUserBuildSettings.connectProfiler || ReadEditorBuildFlag("buildWithDeepProfilingSupport"))
+            {
+                issues.Add(new PrototirSetupIssue(
+                    "development",
+                    "Development or profiling options are enabled",
+                    "Publish a release build without script debugging, profiler connection, or deep profiling.",
+                    PrototirIssueSeverity.Error,
+                    DisableDevelopmentOptions));
+            }
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.productName))
+            {
+                issues.Add(new PrototirSetupIssue(
+                    "product-name",
+                    "Product name is empty",
+                    "Set a product name so the generated prototir.json has a useful default title.",
+                    PrototirIssueSeverity.Warning));
+            }
+
+            if (target == PrototirTarget.Web) AddWebIssues(issues);
+            else AddNativeIssues(issues);
+
+            return issues;
+        }
+
+        /// <summary>The standard Web profile: everything here is about running inside the
+        /// Prototir sandbox iframe, and none of it applies to a native build.</summary>
+        private static void AddWebIssues(List<PrototirSetupIssue> issues)
+        {
+            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL))
+            {
+                issues.Add(new PrototirSetupIssue(
+                    "web-module",
+                    "Web Build Support is missing",
+                    "Install Web Build Support for this editor version through Unity Hub.",
+                    PrototirIssueSeverity.Error));
+            }
+
             if (PlayerSettings.WebGL.threadsSupport)
             {
                 issues.Add(new PrototirSetupIssue(
                     "threads",
-                    "Native Web threads are enabled",
+                    "Web threads are enabled",
                     "The standard Prototir sandbox does not provide cross-origin isolation. Disable threads.",
                     PrototirIssueSeverity.Error,
                     () => PlayerSettings.WebGL.threadsSupport = false));
@@ -123,17 +170,6 @@ namespace Prototir.Editor
                     "Prototir controls such as fullscreen and restart move focus outside the Unity iframe. Keep the Web player running so a focus transition cannot leave its WebGL canvas black or frozen.",
                     PrototirIssueSeverity.Error,
                     () => PlayerSettings.runInBackground = true));
-            }
-
-            if (EditorUserBuildSettings.development || EditorUserBuildSettings.allowDebugging ||
-                EditorUserBuildSettings.connectProfiler || ReadEditorBuildFlag("buildWithDeepProfilingSupport"))
-            {
-                issues.Add(new PrototirSetupIssue(
-                    "development",
-                    "Development or profiling options are enabled",
-                    "Publish a release build without script debugging, profiler connection, or deep profiling.",
-                    PrototirIssueSeverity.Error,
-                    DisableDevelopmentOptions));
             }
 
             if (PlayerSettings.WebGL.debugSymbolMode != WebGLDebugSymbolMode.Off)
@@ -176,37 +212,83 @@ namespace Prototir.Editor
                     PrototirIssueSeverity.Warning,
                     () => PlayerSettings.WebGL.dataCaching = false));
             }
+        }
 
-            if (string.IsNullOrWhiteSpace(PlayerSettings.productName))
+        /// <summary>A native build is an ordinary desktop player. The only thing Prototir needs is
+        /// that it is built for a desktop platform, and it says so rather than switching: a
+        /// platform switch reimports the whole project, which is the creator's call to make.</summary>
+        private static void AddNativeIssues(List<PrototirSetupIssue> issues)
+        {
+            var host = HostDesktopTarget();
+            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, host))
             {
                 issues.Add(new PrototirSetupIssue(
-                    "product-name",
-                    "Product name is empty",
-                    "Set a product name so the generated prototir.json has a useful default title.",
-                    PrototirIssueSeverity.Warning));
+                    "native-module",
+                    $"{Describe(host)} Build Support is missing",
+                    "Install it for this editor version through Unity Hub.",
+                    PrototirIssueSeverity.Error));
             }
 
-            return issues;
+            if (!IsDesktop(EditorUserBuildSettings.activeBuildTarget))
+            {
+                issues.Add(new PrototirSetupIssue(
+                    "native-target",
+                    "The active build target is not Windows, macOS or Linux",
+                    $"Native builds are exported for the active desktop target. Fix switches to {Describe(host)}, which reimports the project and can take a while.",
+                    PrototirIssueSeverity.Warning,
+                    () => EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, host)));
+            }
         }
+
+        internal static bool IsDesktop(BuildTarget target) =>
+            target == BuildTarget.StandaloneWindows64
+            || target == BuildTarget.StandaloneWindows
+            || target == BuildTarget.StandaloneOSX
+            || target == BuildTarget.StandaloneLinux64;
+
+        internal static string Describe(BuildTarget target) => target switch
+        {
+            BuildTarget.StandaloneWindows64 or BuildTarget.StandaloneWindows => "Windows",
+            BuildTarget.StandaloneOSX => "macOS",
+            BuildTarget.StandaloneLinux64 => "Linux",
+            _ => target.ToString(),
+        };
+
+        private static BuildTarget HostDesktopTarget() => Application.platform switch
+        {
+            RuntimePlatform.OSXEditor => BuildTarget.StandaloneOSX,
+            RuntimePlatform.LinuxEditor => BuildTarget.StandaloneLinux64,
+            _ => BuildTarget.StandaloneWindows64,
+        };
 
         internal static void ApplyAllFixes()
         {
-            foreach (var issue in FindIssues().Where(issue => issue.Fix != null)) issue.Fix();
+            foreach (var issue in FindIssues(Target).Where(issue => issue.Fix != null)) issue.Fix();
             AssetDatabase.SaveAssets();
         }
 
         private void OnGUI()
         {
             EditorGUILayout.LabelField("Prototir Project Setup", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Building for", EditorStyles.miniBoldLabel);
+            var target = Target;
+            var picked = (PrototirTarget)GUILayout.Toolbar((int)target, new[] { "Web", "Native" });
+            if (picked != target) Target = target = picked;
             EditorGUILayout.LabelField(
-                "Checks the active project against the Unity 6 single-threaded Web profile before export.",
+                target == PrototirTarget.Web
+                    ? "Plays in the browser on Prototir. Checked against the Unity 6 single-threaded Web profile."
+                    : "A Windows, macOS or Linux build people download and run. One prototype can have both.",
                 EditorStyles.wordWrappedLabel);
             EditorGUILayout.Space(8);
 
-            var issues = FindIssues();
+            var issues = FindIssues(target);
             if (issues.Count == 0)
             {
-                EditorGUILayout.HelpBox("Ready for a Prototir Web release build.", MessageType.Info);
+                EditorGUILayout.HelpBox(
+                    target == PrototirTarget.Web
+                        ? "Ready for a Prototir Web release build."
+                        : "Ready for a Prototir native build.",
+                    MessageType.Info);
             }
             else
             {

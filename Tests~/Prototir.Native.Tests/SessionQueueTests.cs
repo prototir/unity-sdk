@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Prototir.Native.Tests;
 
-/// <summary>Sessions that survive a quit and a plane. A download reports nothing while the player
+/// <summary>Sessions that survive a quit and a plane. A native build reports nothing while the player
 /// is playing, so the queue is the only thing standing between a play and a creator never hearing
 /// about it.</summary>
 public class SessionQueueTests : IDisposable

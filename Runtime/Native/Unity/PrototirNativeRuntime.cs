@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Prototir.Native
 {
-    /// <summary>Everything a downloadable build needs at runtime, in one place: configuration, the
+    /// <summary>Everything a native build needs at runtime, in one place: configuration, the
     /// stored token, the session being accumulated, and the pairing state a game draws.
     ///
     /// <para>Deliberately not a MonoBehaviour. The only thing it needs from the engine is a

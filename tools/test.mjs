@@ -75,7 +75,7 @@ try {
   );
   callbacks[0]({ source: parent, data: { source: 'prototir', v: 1, type: 'storage:result', id: 4, value: 'hard' } });
   assert.deepEqual(sent.at(-1).callback.slice(0, 2), ['__PrototirBridge', 'OnPrototirStorageResult']);
-  // Where a downloadable build talks to Prototir. This URL is compiled into executables that can
+  // Where a native build talks to Prototir. This URL is compiled into executables that can
   // never be updated, so a slip back to a host that serves no /api, or to the generated Azure
   // hostname that changes if the app is recreated, has to fail here rather than in the field.
   const settings = readFileSync(

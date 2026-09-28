@@ -27,16 +27,16 @@ Pin a tag in production so an SDK update cannot change an existing project unexp
 
 After installation:
 
-1. For a browser export, open **Prototir > Project Setup**.
-2. Select **Fix all available**, then resolve any remaining browser-profile blocking items.
+1. Open **Prototir > Project Setup** and choose what you are building: **Web** or **Native**.
+2. Select **Fix all available**, then resolve any remaining blocking items for that target.
 3. Import **Basic Integration** from the package's Samples tab if you want a small API example.
 4. Export a browser or native release using the appropriate **Export for Prototir** command.
-   Native builds do not need `index.html`; see [Downloadable builds](#downloadable-builds).
+   Native builds do not need `index.html`; see [Native builds](#native-builds).
 
 ## Basic use
 
 Browser builds use the host connection. Native releases must pair before sending sessions or
-text feedback; see [Downloadable builds](#downloadable-builds). Storage and AI in this example
+text feedback; see [Native builds](#native-builds). Storage and AI in this example
 are browser features; native calls use local mocks.
 
 ```csharp
@@ -62,10 +62,16 @@ personal data.
 
 ## Project Setup and export checks
 
-The package checks the installed Web module, active target, scenes, native threads, Run In
-Background, development and profiling flags, debug symbols, PWA output, player template, data
-caching, and product name. Blocking issues stop Web builds; recommendations remain visible without
-silently changing the project.
+The window starts with **Building for: Web | Native**. The choice is saved per project (in
+`UserSettings/`), and until you pick it follows the active build target.
+
+- **Every build:** Unity version, enabled scenes, development and profiling flags, product name.
+- **Web:** the installed Web module, threads, Run In Background, debug symbols, PWA output, player
+  template, and data caching. Blocking issues stop Web builds.
+- **Native:** build support for this machine's desktop platform, and a desktop active build target.
+  None of the Web rules apply, and the window never suggests switching to Web.
+
+Recommendations remain visible without silently changing the project.
 
 **Fix all available** changes only settings with a single safe value. It also installs the included
 edge-to-edge Web template, which removes Unity's default page frame and duplicate fullscreen UI.
@@ -133,10 +139,10 @@ The browser `PrototirReview` screenshot overlay does not run in a native player.
 The SDK reuses the pairing until it is revoked or expires. Keep the tester's draft on send failure
 and offer a retry. Testers can disconnect a build from their Prototir account settings.
 
-## Downloadable builds
+## Native builds
 
 A Web build takes everything from the page around it: the visitor is already signed in, and the
-shell watches the prototype and reports for it. A download has none of that, so the SDK does it
+shell watches the prototype and reports for it. A native build has none of that, so the SDK does it
 itself. None of this code reaches a Web build, which strips it at compile time.
 
 You do not configure the slug. Prototir writes it into the .zip as you upload the build, into a
@@ -156,7 +162,7 @@ PrototirSdk.ShowPairingScreen();
 
 It shows the code and a scannable QR, opens the approval link, and handles approval, failure,
 disconnecting and an already connected build. The screen uses Prototir's dark colors and requires
-no prefab or scene setup. It is available in the Editor and native builds. Import the **Download Pairing** sample to see
+no prefab or scene setup. It is available in the Editor and native builds. Import the **Native Pairing** sample to see
 how to build your own UI from the supported pairing events below.
 
 ```csharp
@@ -198,7 +204,7 @@ numbers.
 Two entries under the **Prototir** menu:
 
 - **Export for Prototir (Web)** runs the Project Setup checks, builds, and zips the result.
-- **Export for Prototir (Download)** builds for the active desktop target. It does not switch
+- **Export for Prototir (Native)** builds for the active desktop target. It does not switch
   platform for you, because switching reimports the whole project.
 
 Both produce a ZIP ready to drop on the upload page, and both write `prototir-build.json` beside the
@@ -222,7 +228,7 @@ dotnet test Tests~/Prototir.Native.Tests
 ```
 
 The Node check validates package structure, bridge behavior, the project assistant, export
-validator, and Web template. The dotnet tests cover the download path: pairing, the session
+validator, and Web template. The dotnet tests cover the native path: pairing, the session
 recorder and the session queue run against fake HTTP, a fake clock and a fake delay, so a poll loop
 that waits ten minutes for a deadline finishes instantly and nothing touches the network. A tagged release must additionally compile in Unity 6 and pass a real
 Prototir sandbox play test.

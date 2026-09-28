@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Prototir.Native.Tests;
 
-/// <summary>Pairing hands a game the ability to post as a person, and a downloaded build has no
+/// <summary>Pairing hands a game the ability to post as a person, and a native build has no
 /// session to fall back on, so the states worth pinning are the ones where a wrong answer either
 /// loops forever or throws away a valid grant.</summary>
 public class PairingFlowTests

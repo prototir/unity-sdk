@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Project Setup** now asks what you are building, **Web** or **Native**, and shows only that
+  target's checks. It no longer recommends switching to Web, and a missing Web module no longer
+  blocks a native project.
+- "Download" is now "Native" wherever it names the kind of build: **Export for Prototir (Native)**
+  (was **(Download)**), the **Native Pairing** sample (was **Download Pairing**, now in
+  `Samples~/NativePairing`), and the docs. Re-import the sample from the Package Manager if you
+  used the old one.
+- The export dialog now names the current upload page steps (**Add a build > Windows**).
+
 ## 0.2.1 - 2026-09-28
 
 - Added `PrototirSdk.ShowFeedbackScreen()` for desktop text feedback: one comment, browser pairing when needed, draft retention during this run, and one submission ID across retries. No native screenshot capture is implied.

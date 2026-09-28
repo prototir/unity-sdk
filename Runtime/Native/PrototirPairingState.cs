@@ -1,6 +1,6 @@
 namespace Prototir.Native
 {
-    /// <summary>Where a downloadable build stands with its prototype.
+    /// <summary>Where a native build stands with its prototype.
     ///
     /// <para>Lives on the engine-free side of the seam, with the rest of the protocol: it is a
     /// fact about a pairing, not about Unity, and keeping it here is what lets the rule below be

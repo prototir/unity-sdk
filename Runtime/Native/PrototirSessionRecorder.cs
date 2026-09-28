@@ -57,7 +57,7 @@ namespace Prototir.Native
 
     /// <summary>Accumulates a play so it can be reported as one session.
     ///
-    /// <para>The browser shell watches a prototype and reports for it. A download has no shell, so
+    /// <para>The browser shell watches a prototype and reports for it. A native build has no shell, so
     /// the build must keep its own count and send one session rather than a call per event: the
     /// endpoint records a session, and a request per <c>Event()</c> would be both wrong and a
     /// good way to burn a player's connection.</para></summary>

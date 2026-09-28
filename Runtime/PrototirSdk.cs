@@ -138,7 +138,7 @@ namespace Prototir
             Native.PrototirNativeRuntime.BeginPairingAsync(cancellationToken);
 #endif
 
-        /// <summary>Points a downloadable build at a prototype from code, instead of the settings
+        /// <summary>Points a native build at a prototype from code, instead of the settings
         /// asset. The Godot addon has had <c>Prototir.configure</c> from the start; this is the
         /// same thing, and without it a Unity build could only learn its slug by being rebuilt.
         ///

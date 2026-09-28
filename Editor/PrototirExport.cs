@@ -8,11 +8,11 @@ using UnityEngine;
 
 namespace Prototir.Editor
 {
-    /// <summary>One button per delivery mode (D43), so a creator does not have to know which Unity
-    /// build settings Prototir expects.
+    /// <summary>One button per build type (D43), Web and Native, so a creator does not have to know
+    /// which Unity build settings Prototir expects.
     ///
     /// <para>Both produce a ZIP ready to drop on the upload page: web bundles are uploaded as one
-    /// archive, and a desktop build has to be an archive because an executable alone leaves its
+    /// archive, and a native build has to be an archive because an executable alone leaves its
     /// data folder behind, which is the most common way a download arrives broken.</para></summary>
     public static class PrototirExport
     {
@@ -27,7 +27,7 @@ namespace Prototir.Editor
 
             // Everything the sandbox requires is checked here rather than after a long build, so a
             // missing setting costs a dialog instead of ten minutes.
-            var errors = PrototirProjectSetup.FindIssues()
+            var errors = PrototirProjectSetup.FindIssues(PrototirTarget.Web)
                 .Where(issue => issue.Severity == PrototirIssueSeverity.Error)
                 .ToArray();
             if (errors.Length > 0)
@@ -41,11 +41,11 @@ namespace Prototir.Editor
             if (!string.IsNullOrEmpty(parent)) Export(BuildTarget.WebGL, parent, "prototir-web");
         }
 
-        [MenuItem("Prototir/Export for Prototir (Download)", priority = 21)]
-        public static void ExportDownload()
+        [MenuItem("Prototir/Export for Prototir (Native)", priority = 21)]
+        public static void ExportNative()
         {
             var target = EditorUserBuildSettings.activeBuildTarget;
-            if (!IsDesktop(target))
+            if (!PrototirProjectSetup.IsDesktop(target))
             {
                 // Switching platforms reimports every asset in the project, which can take a very
                 // long time. That is the creator's decision to make, not a side effect of clicking
@@ -68,9 +68,9 @@ namespace Prototir.Editor
                 return;
 
             var parent = EditorUtility.SaveFolderPanel(
-                $"Export for Prototir ({Describe(target)})", string.Empty, string.Empty);
+                $"Export for Prototir ({PrototirProjectSetup.Describe(target)})", string.Empty, string.Empty);
             if (!string.IsNullOrEmpty(parent))
-                Export(target, parent, $"prototir-{Describe(target).ToLowerInvariant()}");
+                Export(target, parent, $"prototir-{PrototirProjectSetup.Describe(target).ToLowerInvariant()}");
         }
 
         /// <summary>The export itself, with the folder already chosen. Separate from the menu
@@ -150,34 +150,20 @@ namespace Prototir.Editor
                 "Ready to upload",
                 $"{Path.GetFileName(archive)}\n{megabytes:0.0} MB\n\n" +
                 (target == BuildTarget.WebGL
-                    ? "Add it under \"Play in the browser\" on the upload page."
-                    : "Add it under \"Download and run\" on the upload page, and remember a cover " +
-                      "image is required when there is no web build."),
+                    ? "On the upload page, choose Add a build > Play in the browser."
+                    : $"On the upload page, choose Add a build > {PrototirProjectSetup.Describe(target)}. " +
+                      "A native-only prototype also needs a cover image."),
                 "Show me");
             EditorUtility.RevealInFinder(archive);
             return true;
         }
 
-        /// <summary>A download with no slug still runs; it simply cannot say anything back.</summary>
+        /// <summary>A native build with no slug still runs; it simply cannot say anything back.</summary>
         private static bool HasSlug()
         {
             var settings = PrototirSettings.Load();
             return settings != null && settings.IsConfigured;
         }
-
-        private static bool IsDesktop(BuildTarget target) =>
-            target == BuildTarget.StandaloneWindows64
-            || target == BuildTarget.StandaloneWindows
-            || target == BuildTarget.StandaloneOSX
-            || target == BuildTarget.StandaloneLinux64;
-
-        private static string Describe(BuildTarget target) => target switch
-        {
-            BuildTarget.StandaloneWindows64 or BuildTarget.StandaloneWindows => "Windows",
-            BuildTarget.StandaloneOSX => "macOS",
-            BuildTarget.StandaloneLinux64 => "Linux",
-            _ => target.ToString(),
-        };
 
         private static string ExecutableName(BuildTarget target)
         {
