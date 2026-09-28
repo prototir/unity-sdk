@@ -22,6 +22,8 @@ namespace Prototir.Editor
         [Serializable] private sealed class DonePart { public int partNumber; public string etag; }
         [Serializable] private sealed class CompleteBody { public string uploadRef; public string uploadId; public DonePart[] parts; }
         [Serializable] private sealed class CompleteReply { public string claim; public string error; }
+        [Serializable] private sealed class RegisterBody { public string claim; public string fileName; public string engine; public string kind; public string platform; public string architecture; public string slug; }
+        [Serializable] private sealed class RegisterReply { public string id; public string error; }
 
         private const int Attempts = 3;
 
@@ -82,6 +84,23 @@ namespace Prototir.Editor
                 throw;
             }
         }
+
+        /// <summary>Tells Prototir the upload is waiting (§16.5.37), so Studio or the upload page
+        /// lists it with its upload time until it is used, and a reload cannot lose it. A newer
+        /// upload for the same prototype and platform replaces the older one.</summary>
+        internal static Task RegisterAsync(
+            string apiBase, string token, string claim, string fileName, string kind,
+            string platform, string architecture, string slug, CancellationToken ct) =>
+            Control<RegisterReply>(apiBase, token, "editor/uploads", JsonUtility.ToJson(new RegisterBody
+            {
+                claim = claim,
+                fileName = fileName,
+                engine = "unity",
+                kind = kind,
+                platform = platform,
+                architecture = architecture,
+                slug = slug,
+            }), ct);
 
         private static async Task<T> Control<T>(string apiBase, string token, string route, string json, CancellationToken ct)
             where T : class

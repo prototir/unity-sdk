@@ -211,6 +211,10 @@ editor never publishes on its own.
   or use **Prototir > Unlink This Editor**.
 - **Project with a slug** (Prototir > Create Settings): the browser opens that prototype's Studio
   page instead, to replace its web build or add this native build.
+- **Uploads wait for you** for 7 days, listed with their upload time on the upload page (new
+  prototype) or in Studio (project with a slug), so closing or reloading the browser loses
+  nothing. Use or discard each one there. A newer upload for the same prototype and platform
+  replaces the one still waiting.
 - **Native builds** are labelled with Unity's default architecture: x86-64 for Windows and Linux,
   universal for macOS. For anything else, use Export and pick the architecture on the upload page.
 - Publish needs the editor UI; batch builds keep using Export.

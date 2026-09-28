@@ -65,7 +65,18 @@ namespace Prototir.Editor
                 var claim = Upload(apiBase, link, archive);
                 if (claim == null) return;
 
-                Application.OpenURL(HandoffUrl(link.AppOrigin, claim, target, Path.GetFileName(archive)));
+                var settings = PrototirSettings.Load();
+                var slug = settings != null && settings.IsConfigured ? settings.PrototypeSlug : null;
+                var native = target != BuildTarget.WebGL;
+                Wait(async ct =>
+                {
+                    await PrototirDirectUpload.RegisterAsync(apiBase, link.Token, claim, Path.GetFileName(archive),
+                        native ? "native" : "web", native ? Platform(target) : null,
+                        native ? Architecture(target) : null, slug, ct).ConfigureAwait(false);
+                    return true;
+                }, "Finishing the upload...");
+
+                Application.OpenURL(DestinationUrl(link.AppOrigin, slug));
                 Debug.Log($"Prototir: uploaded {Path.GetFileName(archive)}. Finish publishing in your browser.");
             }
             catch (Exception error)
@@ -141,19 +152,12 @@ namespace Prototir.Editor
             return task.GetAwaiter().GetResult();
         }
 
-        /// <summary>Where the creator finishes. The claim is the handoff: signed, bound to their
-        /// account and short-lived, so the rest of the query only describes the build.</summary>
-        internal static string HandoffUrl(string origin, string claim, BuildTarget target, string fileName)
-        {
-            var query = $"staged={Uri.EscapeDataString(claim)}&name={Uri.EscapeDataString(fileName)}&from=unity";
-            if (target == BuildTarget.WebGL) query += "&kind=web";
-            else query += $"&kind=native&platform={Platform(target)}&arch={Architecture(target)}";
-
-            var settings = PrototirSettings.Load();
-            if (settings != null && settings.IsConfigured)
-                return $"{origin}/dashboard/{Uri.EscapeDataString(settings.PrototypeSlug)}/edit?{query}#builds";
-            return $"{origin}/dashboard/upload?{query}&title={Uri.EscapeDataString(PlayerSettings.productName ?? string.Empty)}";
-        }
+        /// <summary>Where the creator finishes. The upload itself is registered with Prototir,
+        /// so the page lists it on its own; the address only says which page to open.</summary>
+        internal static string DestinationUrl(string origin, string slug) =>
+            string.IsNullOrEmpty(slug)
+                ? $"{origin}/dashboard/upload?title={Uri.EscapeDataString(PlayerSettings.productName ?? string.Empty)}"
+                : $"{origin}/dashboard/{Uri.EscapeDataString(slug)}/edit#builds";
 
         private static string Platform(BuildTarget target) => target switch
         {
