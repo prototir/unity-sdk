@@ -52,6 +52,37 @@ namespace Prototir.Editor
 
         internal static readonly HttpClient Http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
 
+        /// <summary>Every call to the Prototir API goes through here. Each uses a fresh connection
+        /// and is retried once on a network error: Publish checks the link, then Unity builds for
+        /// minutes, and the pooled connection from before the build has usually been closed by the
+        /// server by then. Unity's HttpClient reuses it anyway and reports only "An error occurred
+        /// while sending the request" (§16.5.37, found on the first real publish).</summary>
+        internal static async Task<HttpResponseMessage> SendApiAsync(Func<HttpRequestMessage> build, CancellationToken ct)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                var request = build();
+                request.Headers.ConnectionClose = true;
+                try
+                {
+                    return await Http.SendAsync(request, ct).ConfigureAwait(false);
+                }
+                catch (HttpRequestException) when (attempt < 2 && !ct.IsCancellationRequested)
+                {
+                    request.Dispose();
+                    await Task.Delay(TimeSpan.FromSeconds(1), ct).ConfigureAwait(false);
+                }
+            }
+        }
+
+        internal static HttpRequestMessage Json(HttpMethod method, string url, string json, string token = null)
+        {
+            var request = new HttpRequestMessage(method, url);
+            if (json != null) request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            if (token != null) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            return request;
+        }
+
         internal static string ApiBase()
         {
             var settings = PrototirSettings.Load();
@@ -96,9 +127,8 @@ namespace Prototir.Editor
         /// Only a definite 401 forgets the token; a network error leaves it for the next try.</summary>
         internal static async Task<Link> VerifyAsync(string apiBase, Link link, CancellationToken ct)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{apiBase}/editor/me");
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", link.Token);
-            using var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            using var response = await SendApiAsync(
+                () => Json(HttpMethod.Get, $"{apiBase}/editor/me", null, link.Token), ct).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Unauthorized) return null;
             if (!response.IsSuccessStatusCode)
                 throw new InvalidOperationException($"Prototir answered {(int)response.StatusCode} when checking this editor's link.");
@@ -114,8 +144,8 @@ namespace Prototir.Editor
         internal static async Task<Pending> StartAsync(string apiBase, string editorLabel, CancellationToken ct)
         {
             var body = JsonUtility.ToJson(new StartBody { engine = "unity", editorLabel = editorLabel });
-            using var response = await Http.PostAsync($"{apiBase}/editor/pair",
-                new StringContent(body, Encoding.UTF8, "application/json"), ct).ConfigureAwait(false);
+            using var response = await SendApiAsync(
+                () => Json(HttpMethod.Post, $"{apiBase}/editor/pair", body), ct).ConfigureAwait(false);
             var reply = JsonUtility.FromJson<StartReply>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
             if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(reply?.code))
                 throw new InvalidOperationException(reply?.error ?? $"Prototir could not start linking this editor ({(int)response.StatusCode}).");
@@ -139,8 +169,8 @@ namespace Prototir.Editor
                 HttpResponseMessage response;
                 try
                 {
-                    response = await Http.PostAsync($"{apiBase}/editor/pair/poll",
-                        new StringContent(body, Encoding.UTF8, "application/json"), ct).ConfigureAwait(false);
+                    response = await SendApiAsync(
+                        () => Json(HttpMethod.Post, $"{apiBase}/editor/pair/poll", body), ct).ConfigureAwait(false);
                 }
                 catch (HttpRequestException)
                 {

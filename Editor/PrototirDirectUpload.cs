@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,10 +74,9 @@ namespace Prototir.Editor
                 // effort: a failed cleanup must not hide the error the creator needs to see.
                 try
                 {
-                    using var abort = new HttpRequestMessage(HttpMethod.Delete,
-                        $"{apiBase}/me/uploads/direct/{start.uploadRef}?uploadId={Uri.EscapeDataString(start.uploadId)}");
-                    abort.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    using var _ = await PrototirEditorLink.Http.SendAsync(abort, CancellationToken.None).ConfigureAwait(false);
+                    using var _ = await PrototirEditorLink.SendApiAsync(() => PrototirEditorLink.Json(HttpMethod.Delete,
+                        $"{apiBase}/me/uploads/direct/{start.uploadRef}?uploadId={Uri.EscapeDataString(start.uploadId)}",
+                        null, token), CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception) { }
                 throw;
@@ -105,12 +103,8 @@ namespace Prototir.Editor
         private static async Task<T> Control<T>(string apiBase, string token, string route, string json, CancellationToken ct)
             where T : class
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"{apiBase}/{route}")
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json"),
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            using var response = await PrototirEditorLink.Http.SendAsync(request, ct).ConfigureAwait(false);
+            using var response = await PrototirEditorLink.SendApiAsync(
+                () => PrototirEditorLink.Json(HttpMethod.Post, $"{apiBase}/{route}", json, token), ct).ConfigureAwait(false);
             var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 throw new UnauthorizedAccessException("This editor is no longer linked to your Prototir account.");
@@ -146,7 +140,8 @@ namespace Prototir.Editor
                     if (attempt < Attempts) await Task.Delay(TimeSpan.FromMilliseconds(500 * (1 << attempt)), ct).ConfigureAwait(false);
                 }
             }
-            throw new InvalidOperationException(last?.Message ?? "A part of the upload failed.");
+            throw new InvalidOperationException(
+                "Storage did not accept a part of the upload: " + PrototirPublish.Explain(last), last);
         }
     }
 }

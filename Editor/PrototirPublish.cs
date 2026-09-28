@@ -50,6 +50,7 @@ namespace Prototir.Editor
         private static void Run(BuildTarget target, string archiveName)
         {
             var apiBase = PrototirEditorLink.ApiBase();
+            var step = "checking this editor's link";
             try
             {
                 // Linked first: finding out the editor is not linked after a ten-minute build
@@ -57,17 +58,20 @@ namespace Prototir.Editor
                 var link = EnsureLinked(apiBase);
                 if (link == null) return;
 
+                step = "building";
                 var parent = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "PrototirPublish");
                 Directory.CreateDirectory(parent);
                 var archive = PrototirExport.Build(target, parent, archiveName, announce: false);
                 if (archive == null) return;
 
+                step = "uploading the build";
                 var claim = Upload(apiBase, link, archive);
                 if (claim == null) return;
 
                 var settings = PrototirSettings.Load();
                 var slug = settings != null && settings.IsConfigured ? settings.PrototypeSlug : null;
                 var native = target != BuildTarget.WebGL;
+                step = "registering the upload";
                 Wait(async ct =>
                 {
                     await PrototirDirectUpload.RegisterAsync(apiBase, link.Token, claim, Path.GetFileName(archive),
@@ -81,15 +85,34 @@ namespace Prototir.Editor
             }
             catch (Exception error)
             {
+                // The dialog says which step failed and why; the full exception, with the inner
+                // reasons .NET hides behind "An error occurred while sending the request", goes to
+                // the Console for anyone who has to dig further.
+                Debug.LogException(error);
                 PrototirExport.Fail(error is UnauthorizedAccessException
                     ? "This editor is no longer linked to your Prototir account. Publish again to link it."
-                    : $"Publishing stopped: {error.Message}");
+                    : $"Publishing stopped while {step}: {Explain(error)}\n\nThe Console has the full error.");
                 if (error is UnauthorizedAccessException) PrototirEditorLink.Forget(apiBase);
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
             }
+        }
+
+        /// <summary>The innermost useful reasons, joined. A network failure in .NET arrives as
+        /// "An error occurred while sending the request" with the actual cause (a closed
+        /// connection, a TLS or DNS failure) one or two levels down.</summary>
+        internal static string Explain(Exception error)
+        {
+            var reasons = new System.Collections.Generic.List<string>();
+            for (var e = error; e != null; e = e.InnerException)
+            {
+                if (e is AggregateException aggregate && aggregate.InnerExceptions.Count == 1) continue;
+                var message = e.Message?.Trim();
+                if (!string.IsNullOrEmpty(message) && !reasons.Contains(message)) reasons.Add(message);
+            }
+            return reasons.Count == 0 ? "unknown error" : string.Join(" ", reasons);
         }
 
         private static PrototirEditorLink.Link EnsureLinked(string apiBase)
