@@ -1,7 +1,8 @@
 # Prototir SDK for Unity
 
-Install the package from its Git URL in Unity Package Manager. The first supported target is a
-Unity 6 Web release build using the standard, single-threaded Prototir runtime.
+Install a tagged package from its Git URL in Unity Package Manager. It supports Unity 6 browser
+exports with the standard single-threaded profile and native release players for Windows, macOS,
+and Linux. Publish either delivery mode or both on one Prototir page.
 
 ```csharp
 using Prototir;
@@ -18,9 +19,10 @@ names are normalized to lowercase and must use letters, numbers, `_`, `.`, `:`, 
 
 ## Editor and non-Web behavior
 
-No browser symbols are imported outside a real Unity Web player. Storage uses an in-memory mock,
-signals are exposed through `MockReadySent`, `MockEventSent`, and `MockScoreSent`, and managed AI
-requires an explicit `MockAiHandler`. This keeps tests deterministic and prevents an Editor scene
+No browser symbols are imported outside a real Unity Web player. Native releases report Ready,
+events, scores, sessions, and text feedback after device pairing. The Editor can test pairing but
+never reports its play as a session. Storage uses an in-memory mock outside Web players, and
+managed AI requires an explicit local `MockAiHandler`. This keeps tests deterministic and prevents an Editor scene
 from accidentally contacting a production service.
 
 ## Pointer lock and Escape

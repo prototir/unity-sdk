@@ -1,15 +1,16 @@
 # Prototir SDK for Unity
 
 The official Unity integration for prototypes hosted on [Prototir](https://prototir.com). The
-package connects a Unity Web build to Prototir lifecycle signals, analytics events, scores,
-persistent storage, and managed text generation. It also validates project and export settings so
-unsupported builds fail early with actionable guidance.
+package connects browser and native builds to lifecycle signals, analytics events, scores, and
+feedback. Browser builds also use persistent SDK storage, managed text generation, and screenshot
+feedback. Native builds pair with a tester's account and report over HTTP. Export checks help catch
+unsupported browser settings before upload.
 
 ## Compatibility
 
 - Unity 6 (`6000.0`) or newer
-- Web build target
-- Single-threaded standard runtime profile
+- Browser: Web target with the single-threaded standard runtime profile
+- Native: Windows, macOS, and Linux release players, with device pairing
 
 Older Unity releases are not supported. The package declares its minimum editor version, and the
 Project Setup window reports an incompatible editor as a blocking issue.
@@ -22,17 +23,21 @@ In Unity Package Manager, choose **Add package from git URL** and use a tagged r
 https://github.com/prototir/unity-sdk.git#v0.2.0
 ```
 
-For testing before the first tag is published, omit `#v0.1.0`. Pin a tag in production so an SDK
-update cannot change an existing project unexpectedly.
+Pin a tag in production so an SDK update cannot change an existing project unexpectedly.
 
 After installation:
 
-1. Open **Prototir > Project Setup**.
-2. Select **Fix all available**, then resolve any remaining blocking items.
+1. For a browser export, open **Prototir > Project Setup**.
+2. Select **Fix all available**, then resolve any remaining browser-profile blocking items.
 3. Import **Basic Integration** from the package's Samples tab if you want a small API example.
-4. Build a non-development Web release and ZIP the contents of the export directory.
+4. Export a browser or native release using the appropriate **Export for Prototir** command.
+   Native builds do not need `index.html`; see [Downloadable builds](#downloadable-builds).
 
 ## Basic use
+
+Browser builds use the host connection. Native releases must pair before sending sessions or
+text feedback; see [Downloadable builds](#downloadable-builds). Storage and AI in this example
+are browser features; native calls use local mocks.
 
 ```csharp
 using Prototir;
@@ -75,10 +80,11 @@ node tools/export-validator.mjs /path/to/export
 
 ## Editor behavior
 
-Editor and non-Web play mode use local mocks and never import browser-only symbols. Storage is kept
-in memory, readiness/events/scores are exposed as mock events, and managed AI requires an explicit
-`PrototirSdk.MockAiHandler`. This keeps local tests deterministic and prevents accidental service
-requests.
+The Editor exposes mock readiness/events/scores and can test device pairing, but never reports
+development play as a real session. Native release players report Ready, events, scores, sessions,
+and text feedback after pairing. Outside Web players, SDK storage remains in memory and managed AI
+requires an explicit local `PrototirSdk.MockAiHandler`; neither is connected to a hosted native
+storage or AI service. Use your own persistent save system for native builds.
 
 ## Screenshot feedback
 
@@ -110,25 +116,23 @@ they match what the player saw. While the panel is open the component clears
 The component is inert outside Web builds and in the Editor. There is nothing to remove for a native
 build, but testers will not see the button there.
 
-### Posting from a downloaded build
-
-A native build has no Prototir session, and providers like Google refuse to sign in inside an
-embedded browser. So the build sends the tester to a real one: it shows a short code and a QR, the
-tester approves at `prototir.com/link` on their desktop or phone, and the build receives a token
-scoped to that one prototype.
-
-They approve once per machine, not once per comment, and the screenshot they were writing is kept
-and posted the moment they come back. Testers can disconnect any build from their Prototir account
-settings.
-
-Set `ApiBase` and `PrototypeSlug` to enable it. Without them the panel saves review files instead,
-which needs no account and works offline.
+For browser builds hosted elsewhere, `PrototirReview.ApiBase` and `PrototypeSlug` configure the
+browser panel's connection. Without that connection, the browser panel saves review files offline.
 
 On Prototir the feedback becomes an ordinary comment on the prototype, after Prototir's own
 confirmation dialog. In a Web build you host yourself the panel saves a
 `feedback.prototir-review.json` file that the tester sends you and you reload with **Import review**.
 See the [Web SDK README](https://github.com/prototir/web-sdk#screenshot-feedback) for the file format
 and its limits.
+
+### Text feedback from a native build
+
+A native build pairs through a code approved at `prototir.com/link`, receiving authorization for
+one prototype. After approval, call `PrototirSdk.SendFeedbackAsync(text)` from your own comment UI.
+The browser `PrototirReview` screenshot overlay does not run in a native player.
+
+The SDK reuses the pairing until it is revoked or expires. Keep the tester's draft on send failure
+and offer a retry. Testers can disconnect a build from their Prototir account settings.
 
 ## Downloadable builds
 
@@ -145,7 +149,7 @@ Prototir, or an installer Prototir cannot write into. A game that decides its pr
 can call `PrototirSdk.Configure("your-slug")`. The injected slug wins over the settings asset,
 because it travelled with that exact download.
 
-For a ready-to-use pairing screen over your game, call:
+The current source checkout also has a ready-to-use pairing screen over your game:
 
 ```csharp
 PrototirSdk.ShowPairingScreen();
@@ -153,8 +157,9 @@ PrototirSdk.ShowPairingScreen();
 
 It shows the code and a scannable QR, opens the approval link, and handles approval, failure,
 disconnecting and an already connected build. The screen uses Prototir's dark colors and requires
-no prefab or scene setup. It is available in the Editor and in native builds. You can still import
-the **Download Pairing** sample or build your own UI from the pairing events.
+no prefab or scene setup. It is available in the Editor and in native builds, but was added after
+the immutable `v0.2.0` release. With `v0.2.0`, import the **Download Pairing** sample or build your
+own UI from the supported pairing events below.
 
 ```csharp
 void Start()
