@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added **Prototir > Publish to Prototir (Web)** and **(Native)**: build, upload straight to
+  Prototir, and open the upload page (or the prototype's Studio page when the project has a slug)
+  with the build attached, ready to finish and publish. The editor links to your account once per
+  computer through a browser approval; **Prototir > Unlink This Editor** removes the link.
 - **Project Setup** now asks what you are building, **Web** or **Native**, and shows only that
   target's checks. It no longer recommends switching to Web, and a missing Web module no longer
   blocks a native project.

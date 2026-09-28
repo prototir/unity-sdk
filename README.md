@@ -199,9 +199,25 @@ Pairing works in the Editor, so you can build the screen without exporting every
 does not: pressing Play is not a play, and counting it would put your own testing in your own
 numbers.
 
+## Publish to Prototir
+
+**Prototir > Publish to Prototir (Web)** and **(Native)** build, upload, and open your browser on
+the upload page with the build already attached. You finish the details there and publish; the
+editor never publishes on its own.
+
+- **First time on a computer:** the editor asks to be linked to your account. Your browser opens
+  an approval page with a code; approve it once and every project on this machine can publish.
+  The link can only upload builds. See or remove it under **Linked editors** on your account page,
+  or use **Prototir > Unlink This Editor**.
+- **Project with a slug** (Prototir > Create Settings): the browser opens that prototype's Studio
+  page instead, to replace its web build or add this native build.
+- **Native builds** are labelled with Unity's default architecture: x86-64 for Windows and Linux,
+  universal for macOS. For anything else, use Export and pick the architecture on the upload page.
+- Publish needs the editor UI; batch builds keep using Export.
+
 ## Export buttons
 
-Two entries under the **Prototir** menu:
+Two entries under the **Prototir** menu produce a ZIP without uploading it:
 
 - **Export for Prototir (Web)** runs the Project Setup checks, builds, and zips the result.
 - **Export for Prototir (Native)** builds for the active desktop target. It does not switch

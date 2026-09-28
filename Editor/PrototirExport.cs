@@ -19,24 +19,7 @@ namespace Prototir.Editor
         [MenuItem("Prototir/Export for Prototir (Web)", priority = 20)]
         public static void ExportWeb()
         {
-            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL))
-            {
-                Fail("Web Build Support is not installed for this Unity version. Add it in Unity Hub.");
-                return;
-            }
-
-            // Everything the sandbox requires is checked here rather than after a long build, so a
-            // missing setting costs a dialog instead of ten minutes.
-            var errors = PrototirProjectSetup.FindIssues(PrototirTarget.Web)
-                .Where(issue => issue.Severity == PrototirIssueSeverity.Error)
-                .ToArray();
-            if (errors.Length > 0)
-            {
-                Fail("Fix these in Prototir > Project Setup first:\n\n" +
-                     string.Join("\n", errors.Select(issue => $"- {issue.Title}")));
-                return;
-            }
-
+            if (!CanBuildWeb()) return;
             var parent = EditorUtility.SaveFolderPanel("Export for Prototir (Web)", string.Empty, string.Empty);
             if (!string.IsNullOrEmpty(parent)) Export(BuildTarget.WebGL, parent, "prototir-web");
         }
@@ -44,18 +27,7 @@ namespace Prototir.Editor
         [MenuItem("Prototir/Export for Prototir (Native)", priority = 21)]
         public static void ExportNative()
         {
-            var target = EditorUserBuildSettings.activeBuildTarget;
-            if (!PrototirProjectSetup.IsDesktop(target))
-            {
-                // Switching platforms reimports every asset in the project, which can take a very
-                // long time. That is the creator's decision to make, not a side effect of clicking
-                // a menu item.
-                Fail(
-                    $"The active build target is {target}. Switch to Windows, macOS or Linux in " +
-                    "File > Build Profiles first.\n\nThis button does not switch for you: changing " +
-                    "platform reimports the whole project.");
-                return;
-            }
+            if (!CanBuildNative(out var target)) return;
 
             if (!HasSlug() && !Application.isBatchMode && !EditorUtility.DisplayDialog(
                     "Prototir export",
@@ -73,10 +45,49 @@ namespace Prototir.Editor
                 Export(target, parent, $"prototir-{PrototirProjectSetup.Describe(target).ToLowerInvariant()}");
         }
 
+        /// <summary>Everything the sandbox requires, checked before a long build so a missing
+        /// setting costs a dialog instead of ten minutes. Shared by Export and Publish.</summary>
+        internal static bool CanBuildWeb()
+        {
+            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.WebGL, BuildTarget.WebGL))
+            {
+                Fail("Web Build Support is not installed for this Unity version. Add it in Unity Hub.");
+                return false;
+            }
+
+            var errors = PrototirProjectSetup.FindIssues(PrototirTarget.Web)
+                .Where(issue => issue.Severity == PrototirIssueSeverity.Error)
+                .ToArray();
+            if (errors.Length == 0) return true;
+            Fail("Fix these in Prototir > Project Setup first:\n\n" +
+                 string.Join("\n", errors.Select(issue => $"- {issue.Title}")));
+            return false;
+        }
+
+        /// <summary>A native build is exported for the active desktop target, never a switched
+        /// one: switching platforms reimports every asset in the project, which can take a very
+        /// long time. That is the creator's decision to make, not a side effect of a menu item.</summary>
+        internal static bool CanBuildNative(out BuildTarget target)
+        {
+            target = EditorUserBuildSettings.activeBuildTarget;
+            if (PrototirProjectSetup.IsDesktop(target)) return true;
+            Fail(
+                $"The active build target is {target}. Switch to Windows, macOS or Linux in " +
+                "File > Build Profiles first.\n\nThis button does not switch for you: changing " +
+                "platform reimports the whole project.");
+            return false;
+        }
+
         /// <summary>The export itself, with the folder already chosen. Separate from the menu
         /// items so it can be driven headlessly: picking a folder is UI, building and packaging
         /// is not, and only the second half is worth exercising without a human present.</summary>
-        public static bool Export(BuildTarget target, string parent, string archiveName)
+        public static bool Export(BuildTarget target, string parent, string archiveName) =>
+            Build(target, parent, archiveName, announce: true) != null;
+
+        /// <summary>Builds and zips, returning the archive path, or null after reporting why not.
+        /// <paramref name="announce"/> is the "Ready to upload" dialog and file browser, which
+        /// Publish skips because it uploads the archive itself.</summary>
+        internal static string Build(BuildTarget target, string parent, string archiveName, bool announce)
         {
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)
@@ -85,7 +96,7 @@ namespace Prototir.Editor
             if (scenes.Length == 0)
             {
                 Fail("No scenes are enabled in Build Settings, so there is nothing to export.");
-                return false;
+                return null;
             }
 
             // A clean folder per export: leftovers from a previous build ship inside the archive
@@ -109,7 +120,7 @@ namespace Prototir.Editor
             if (report.summary.result != BuildResult.Succeeded)
             {
                 Fail($"The build did not finish ({report.summary.result}). See the Console for details.");
-                return false;
+                return null;
             }
 
             var archive = output + ".zip";
@@ -139,12 +150,12 @@ namespace Prototir.Editor
                 Debug.LogWarning($"Prototir: the build succeeded but could not be zipped ({error.Message}). " +
                                  $"Zip {output} yourself before uploading.{hint}");
                 if (!Application.isBatchMode) EditorUtility.RevealInFinder(output);
-                return false;
+                return null;
             }
 
             var megabytes = new FileInfo(archive).Length / 1024d / 1024d;
             Debug.Log($"Prototir: exported {archive} ({megabytes:0.0} MB). Upload it at prototir.com.");
-            if (Application.isBatchMode) return true;
+            if (!announce || Application.isBatchMode) return archive;
 
             EditorUtility.DisplayDialog(
                 "Ready to upload",
@@ -155,7 +166,7 @@ namespace Prototir.Editor
                       "A native-only prototype also needs a cover image."),
                 "Show me");
             EditorUtility.RevealInFinder(archive);
-            return true;
+            return archive;
         }
 
         /// <summary>A native build with no slug still runs; it simply cannot say anything back.</summary>
@@ -178,7 +189,7 @@ namespace Prototir.Editor
             };
         }
 
-        private static void Fail(string message)
+        internal static void Fail(string message)
         {
             // A dialog nobody can dismiss would hang a headless build forever.
             if (Application.isBatchMode) Debug.LogError($"Prototir export: {message}");
