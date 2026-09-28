@@ -1,13 +1,14 @@
 {
   "name": "com.prototir.sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "displayName": "Prototir SDK",
   "description": "Unity 6 integration for Prototir browser and native builds: readiness, events, scores, sessions, and feedback.",
   "unity": "6000.0",
   "unityRelease": "0f1",
   "dependencies": {
     "com.unity.modules.unitywebrequest": "1.0.0",
-    "com.unity.modules.jsonserialize": "1.0.0"
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0"
   },
   "documentationUrl": "https://prototir.com/docs/creators?runtime=unity#setup",
   "changelogUrl": "https://github.com/prototir/unity-sdk/blob/main/CHANGELOG.md",

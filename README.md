@@ -20,7 +20,7 @@ Project Setup window reports an incompatible editor as a blocking issue.
 In Unity Package Manager, choose **Add package from git URL** and use a tagged release:
 
 ```text
-https://github.com/prototir/unity-sdk.git#v0.2.0
+https://github.com/prototir/unity-sdk.git#v0.2.1
 ```
 
 Pin a tag in production so an SDK update cannot change an existing project unexpectedly.
@@ -119,8 +119,7 @@ build, but testers will not see the button there.
 For browser builds hosted elsewhere, `PrototirReview.ApiBase` and `PrototypeSlug` configure the
 browser panel's connection. Without that connection, the browser panel saves review files offline.
 
-On Prototir the feedback becomes an ordinary comment on the prototype, after Prototir's own
-confirmation dialog. In a Web build you host yourself the panel saves a
+On Prototir the capture opens one host composer, where the tester places a pin and explicitly posts an ordinary comment. In a Web build you host yourself the panel saves a
 `feedback.prototir-review.json` file that the tester sends you and you reload with **Import review**.
 See the [Web SDK README](https://github.com/prototir/web-sdk#screenshot-feedback) for the file format
 and its limits.
@@ -149,7 +148,7 @@ Prototir, or an installer Prototir cannot write into. A game that decides its pr
 can call `PrototirSdk.Configure("your-slug")`. The injected slug wins over the settings asset,
 because it travelled with that exact download.
 
-The current source checkout also has a ready-to-use pairing screen over your game:
+The `v0.2.1` release includes a ready-to-use pairing screen over your game:
 
 ```csharp
 PrototirSdk.ShowPairingScreen();
@@ -157,9 +156,8 @@ PrototirSdk.ShowPairingScreen();
 
 It shows the code and a scannable QR, opens the approval link, and handles approval, failure,
 disconnecting and an already connected build. The screen uses Prototir's dark colors and requires
-no prefab or scene setup. It is available in the Editor and in native builds, but was added after
-the immutable `v0.2.0` release. With `v0.2.0`, import the **Download Pairing** sample or build your
-own UI from the supported pairing events below.
+no prefab or scene setup. It is available in the Editor and native builds. Import the **Download Pairing** sample to see
+how to build your own UI from the supported pairing events below.
 
 ```csharp
 void Start()
@@ -232,3 +230,9 @@ Prototir sandbox play test.
 ## License
 
 [MIT](LICENSE.md)
+
+### Simple native feedback
+
+Call `PrototirSdk.ShowFeedbackScreen()` from your game's Feedback button. The desktop screen keeps an unfinished comment during this run, opens browser pairing when needed, and asks the tester to press Post after pairing. Failed requests keep the draft and reuse its submission ID. Comments pass the API's existing text checks.
+
+For custom pause handling, `Prototir.Native.PrototirFeedbackScreen.Show()` returns the screen and exposes `Closed`. These flat desktop overlays are not headset UI; VR projects should use their own interface and the pairing events / `SendFeedbackAsync`. Native screenshots are not provided.

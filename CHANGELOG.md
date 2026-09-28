@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 - 2026-09-28
+
+- Added `PrototirSdk.ShowFeedbackScreen()` for desktop text feedback: one comment, browser pairing when needed, draft retention during this run, and one submission ID across retries. No native screenshot capture is implied.
+- Included the built-in pairing screen in an immutable installable release. The native screens were compiled and exercised in a Unity 6 Windows player.
+- Browser captures now open the host composer through Web SDK 0.2.8.
 
 - Added `PrototirSdk.ShowPairingScreen()` for downloadable builds: a built-in overlay with the
   code, scannable QR, approval state, success, failure, and disconnect action. Custom UI through

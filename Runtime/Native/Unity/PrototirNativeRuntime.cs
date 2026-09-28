@@ -57,6 +57,8 @@ namespace Prototir.Native
             }
         }
 
+        internal static string PrototypeSlug => Settings?.PrototypeSlug ?? "";
+
         private static PrototirSettings Settings => _settings ??= PrototirSettings.Load();
         private static IPrototirTokenStore Tokens => _tokens ??
             throw new InvalidOperationException("Prototir's Unity runtime has not started.");
@@ -286,7 +288,7 @@ namespace Prototir.Native
         /// that gate is waived for a paired device on purpose: approving the pairing is the
         /// stronger signal, since the tester signed in and authorised this exact build for this
         /// exact prototype.</para></summary>
-        public static async Task<bool> SendFeedbackAsync(string text, CancellationToken ct)
+        public static async Task<bool> SendFeedbackAsync(string text, CancellationToken ct, string clientId = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return false;
             if (!EnsureConfigured()) return false;
@@ -298,7 +300,10 @@ namespace Prototir.Native
                 return false;
             }
 
-            var body = new PrototirUnityJson().Encode(new FeedbackBody { text = text.Trim() });
+            var json = new PrototirUnityJson();
+            var body = string.IsNullOrEmpty(clientId)
+                ? json.Encode(new FeedbackBody { text = text.Trim() })
+                : json.Encode(new FeedbackRetryBody { text = text.Trim(), clientId = clientId });
             try
             {
                 var response = await new PrototirUnityHttp().PostJsonAsync(
@@ -365,6 +370,13 @@ namespace Prototir.Native
                 Outcome = PrototirPairingOutcome.Failed,
                 Message = message,
             };
+        }
+
+        [Serializable]
+        private sealed class FeedbackRetryBody
+        {
+            public string text;
+            public string clientId;
         }
 
         [Serializable]

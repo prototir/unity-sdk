@@ -212,6 +212,15 @@ namespace Prototir
         /// <summary>Posts feedback as the tester who approved this build. No session is needed
         /// first: approving the pairing is the stronger signal, so the usual played-it gate is
         /// waived for a paired device.</summary>
+        /// <summary>Opens a desktop text composer. Drafts survive closing during this run.
+        /// Web builds use the host screenshot composer instead.</summary>
+        public static void ShowFeedbackScreen(string initialText = "")
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Native.PrototirFeedbackScreen.Show(initialText);
+#endif
+        }
+
         public static Task<bool> SendFeedbackAsync(
             string text, CancellationToken cancellationToken = default) =>
 #if UNITY_WEBGL && !UNITY_EDITOR
