@@ -71,12 +71,15 @@ namespace Prototir.Editor
                 var settings = PrototirSettings.Load();
                 var slug = settings != null && settings.IsConfigured ? settings.PrototypeSlug : null;
                 var native = target != BuildTarget.WebGL;
+                // Player Settings > Version, offered as the build's version on the website, where
+                // a native build must have one.
+                var version = string.IsNullOrWhiteSpace(PlayerSettings.bundleVersion) ? null : PlayerSettings.bundleVersion.Trim();
                 step = "registering the upload";
                 Wait(async ct =>
                 {
                     await PrototirDirectUpload.RegisterAsync(apiBase, link.Token, claim, Path.GetFileName(archive),
                         native ? "native" : "web", native ? Platform(target) : null,
-                        native ? Architecture(target) : null, slug, ct).ConfigureAwait(false);
+                        native ? Architecture(target) : null, slug, version, ct).ConfigureAwait(false);
                     return true;
                 }, "Finishing the upload...");
 
