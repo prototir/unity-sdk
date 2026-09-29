@@ -1,6 +1,6 @@
 {
   "name": "com.prototir.sdk",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "displayName": "Prototir SDK",
   "description": "Unity 6 integration for Prototir browser and native builds: readiness, events, scores, sessions, and feedback.",
   "unity": "6000.0",
