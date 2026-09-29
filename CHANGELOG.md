@@ -16,6 +16,11 @@
   `Samples~/NativePairing`), and the docs. Re-import the sample from the Package Manager if you
   used the old one.
 - The export dialog now names the current upload page steps (**Add a build > Windows**).
+- Web builds no longer fail to compile with "The name 'WebGLInput' does not exist" or "'ScreenCapture'
+  does not exist" in projects that trim Unity's built-in modules (found building the example
+  project with Unity 6000.3). The package now depends on the Screen Capture module it uses, and
+  the review overlay reaches the WebGL keyboard switch at runtime, leaving the keyboard as it is
+  when the module is absent.
 
 ## 0.2.1 - 2026-09-28
 

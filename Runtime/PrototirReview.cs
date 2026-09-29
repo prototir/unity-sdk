@@ -27,6 +27,13 @@ namespace Prototir
         private float previousTimeScale;
         private bool reviewing;
         private bool previousKeyboardCapture;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Reached by name, not referenced: some Unity 6 Web builds do not give scripts the WebGL
+        // module, and a direct reference then fails to compile for everyone who adds the SDK.
+        // Without the module the keyboard is simply left as it is (link.xml keeps it when present).
+        private static readonly System.Reflection.PropertyInfo KeyboardCapture =
+            Type.GetType("UnityEngine.WebGLInput, UnityEngine.WebGLModule")?.GetProperty("captureAllKeyboardInput");
+#endif
         private GameObject receiverObject;
 
         [Serializable] private class Options { public string project; public string build; public string corner; public string launcher; public string theme; public string apiBase; public string slug; }
@@ -47,8 +54,11 @@ namespace Prototir
             if (open) { previousTimeScale = Time.timeScale; if (PauseWhileReviewing) Time.timeScale = 0; }
             else if (PauseWhileReviewing) Time.timeScale = previousTimeScale;
 #if UNITY_WEBGL && !UNITY_EDITOR
-            if (open) { previousKeyboardCapture = WebGLInput.captureAllKeyboardInput; WebGLInput.captureAllKeyboardInput = false; }
-            else WebGLInput.captureAllKeyboardInput = previousKeyboardCapture;
+            if (KeyboardCapture != null)
+            {
+                if (open) { previousKeyboardCapture = (bool)KeyboardCapture.GetValue(null); KeyboardCapture.SetValue(null, false); }
+                else KeyboardCapture.SetValue(null, previousKeyboardCapture);
+            }
 #endif
             reviewing = open;
             ReviewVisibilityChanged.Invoke(open);

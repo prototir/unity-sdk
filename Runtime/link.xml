@@ -1,0 +1,6 @@
+<!-- Keeps the WebGL keyboard switch PrototirReview reaches by name, when the module is in the build. -->
+<linker>
+  <assembly fullname="UnityEngine.WebGLModule" ignoreIfMissing="1">
+    <type fullname="UnityEngine.WebGLInput" preserve="all" />
+  </assembly>
+</linker>
