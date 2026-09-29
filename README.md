@@ -20,7 +20,7 @@ Project Setup window reports an incompatible editor as a blocking issue.
 In Unity Package Manager, choose **Add package from git URL** and use a tagged release:
 
 ```text
-https://github.com/prototir/unity-sdk.git#v0.2.1
+https://github.com/prototir/unity-sdk.git#v0.3.0
 ```
 
 Pin a tag in production so an SDK update cannot change an existing project unexpectedly.
@@ -154,7 +154,7 @@ Prototir, or an installer Prototir cannot write into. A game that decides its pr
 can call `PrototirSdk.Configure("your-slug")`. The injected slug wins over the settings asset,
 because it travelled with that exact download.
 
-The `v0.2.1` release includes a ready-to-use pairing screen over your game:
+Since `v0.2.1` the SDK includes a ready-to-use pairing screen over your game:
 
 ```csharp
 PrototirSdk.ShowPairingScreen();
