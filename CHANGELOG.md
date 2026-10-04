@@ -2,8 +2,13 @@
 
 ## Unreleased
 
-- Web builds get the web SDK's **Feedback & tools** control: Screenshot, Comment, Console and
-  Performance. Native builds get the same tools in a later update of this release.
+- **Feedback & tools** for testers, with nothing to set up: Screenshot, Comment, Console and
+  Performance. Web builds get the web SDK's control. Native builds get the same control in the
+  bottom-left corner whenever the build knows its prototype: the console is recorded from start,
+  the performance chart records only while open, and a screenshot or log is always sent with a
+  message. Turn it off with **Feedback Tools** in the settings asset or
+  `PrototirSdk.FeedbackTools = false`; `PrototirSdk.ConsoleText()` returns the recorded console.
+- The package now depends on Unity's Image Conversion module, used to encode native screenshots.
 - The bundled review runtime (web builds) now draws the feedback button like the Prototir badge,
   with the Prototir mark, and uses the website's current palette.
 

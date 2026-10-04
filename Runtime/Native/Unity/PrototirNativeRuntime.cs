@@ -59,6 +59,10 @@ namespace Prototir.Native
 
         internal static string PrototypeSlug => Settings?.PrototypeSlug ?? "";
 
+        /// <summary>The build's console, recorded from boot so the error a tester saw before opening
+        /// the Console panel is already there (§16.7).</summary>
+        public static PrototirConsoleBuffer ConsoleLog { get; } = new PrototirConsoleBuffer();
+
         private static PrototirSettings Settings => _settings ??= PrototirSettings.Load();
         private static IPrototirTokenStore Tokens => _tokens ??
             throw new InvalidOperationException("Prototir's Unity runtime has not started.");
@@ -89,6 +93,9 @@ namespace Prototir.Native
             // its chance here too; otherwise a build that learns its prototype at runtime never
             // reports a session at all. Cheap when there is nothing to send.
             _ = SendPendingAsync(CancellationToken.None);
+#if !UNITY_WEBGL || UNITY_EDITOR
+            if (settings != null && settings.IsConfigured && settings.FeedbackTools) PrototirToolsDock.Ensure();
+#endif
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -96,10 +103,24 @@ namespace Prototir.Native
         {
             Application.quitting += StoreSession;
             PrototirNativeTicker.Install();
+#if !UNITY_WEBGL || UNITY_EDITOR
+            Application.logMessageReceivedThreaded += RecordLog;
+            // Testers get Feedback & tools without the developer writing anything, but only in a
+            // build Prototir knows: anywhere else a comment would have nowhere to go.
+            if (Settings != null && Settings.IsConfigured && Settings.FeedbackTools) PrototirToolsDock.Ensure();
+#endif
             // Deliberately not awaited: nothing in the game should wait on last session getting
             // through, and a failure here is already handled by leaving it in the queue.
             _ = SendPendingAsync(CancellationToken.None);
         }
+
+        private static void RecordLog(string message, string stackTrace, LogType type) =>
+            ConsoleLog.Add(type switch
+            {
+                LogType.Warning => PrototirLogLevel.Warning,
+                LogType.Log => PrototirLogLevel.Log,
+                _ => PrototirLogLevel.Error,
+            }, message, stackTrace);
 
         /// <summary>A session that is never sent is a play the creator never sees, and quitting is
         /// the normal way a desktop game ends. There is no time to send one here, so it is written
@@ -288,7 +309,8 @@ namespace Prototir.Native
         /// that gate is waived for a paired device on purpose: approving the pairing is the
         /// stronger signal, since the tester signed in and authorised this exact build for this
         /// exact prototype.</para></summary>
-        public static async Task<bool> SendFeedbackAsync(string text, CancellationToken ct, string clientId = null)
+        public static async Task<bool> SendFeedbackAsync(string text, CancellationToken ct, string clientId = null,
+            string console = null, PrototirScreenshot screenshot = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return false;
             if (!EnsureConfigured()) return false;
@@ -300,10 +322,7 @@ namespace Prototir.Native
                 return false;
             }
 
-            var json = new PrototirUnityJson();
-            var body = string.IsNullOrEmpty(clientId)
-                ? json.Encode(new FeedbackBody { text = text.Trim() })
-                : json.Encode(new FeedbackRetryBody { text = text.Trim(), clientId = clientId });
+            var body = PrototirFeedbackPayload.Json(text, clientId, console, screenshot);
             try
             {
                 var response = await new PrototirUnityHttp().PostJsonAsync(
@@ -370,19 +389,6 @@ namespace Prototir.Native
                 Outcome = PrototirPairingOutcome.Failed,
                 Message = message,
             };
-        }
-
-        [Serializable]
-        private sealed class FeedbackRetryBody
-        {
-            public string text;
-            public string clientId;
-        }
-
-        [Serializable]
-        private sealed class FeedbackBody
-        {
-            public string text;
         }
 
         [Serializable]

@@ -209,9 +209,6 @@ namespace Prototir
 #endif
         }
 
-        /// <summary>Posts feedback as the tester who approved this build. No session is needed
-        /// first: approving the pairing is the stronger signal, so the usual played-it gate is
-        /// waived for a paired device.</summary>
         /// <summary>Opens a desktop text composer. Drafts survive closing during this run.
         /// Web builds use the host screenshot composer instead.</summary>
         public static void ShowFeedbackScreen(string initialText = "")
@@ -221,6 +218,33 @@ namespace Prototir
 #endif
         }
 
+        /// <summary>Shows or hides Feedback &amp; tools: Screenshot, Comment, Console and Performance
+        /// for testers. On by default in a native build Prototir knows; set it to false to draw your
+        /// own button, or untick it in the settings asset. In a Web build the page draws it, and
+        /// <c>Prototir.review.enable({ tools })</c> chooses its tools.</summary>
+        public static bool FeedbackTools
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            get => false;
+            set { }
+#else
+            get => Native.PrototirToolsDock.Visible;
+            set => Native.PrototirToolsDock.SetVisible(value);
+#endif
+        }
+
+        /// <summary>The console recorded since the build started, one line per entry, in the form
+        /// the Console tool copies and attaches. Empty in a Web build, where the page records it.</summary>
+        public static string ConsoleText() =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+            string.Empty;
+#else
+            Native.PrototirNativeRuntime.ConsoleLog.Text();
+#endif
+
+        /// <summary>Posts feedback as the tester who approved this build. No session is needed
+        /// first: approving the pairing is the stronger signal, so the usual played-it gate is
+        /// waived for a paired device.</summary>
         public static Task<bool> SendFeedbackAsync(
             string text, CancellationToken cancellationToken = default) =>
 #if UNITY_WEBGL && !UNITY_EDITOR

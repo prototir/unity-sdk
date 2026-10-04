@@ -9,7 +9,8 @@
     "com.unity.modules.unitywebrequest": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.imgui": "1.0.0",
-    "com.unity.modules.screencapture": "1.0.0"
+    "com.unity.modules.screencapture": "1.0.0",
+    "com.unity.modules.imageconversion": "1.0.0"
   },
   "documentationUrl": "https://prototir.com/docs/creators?runtime=unity#setup",
   "changelogUrl": "https://github.com/prototir/unity-sdk/blob/main/CHANGELOG.md",

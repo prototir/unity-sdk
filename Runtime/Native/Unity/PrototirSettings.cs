@@ -35,7 +35,13 @@ namespace Prototir
                  "from someone else's attempt to pair against their account.")]
         [SerializeField] private string deviceLabel = string.Empty;
 
+        [Tooltip("Shows Feedback & tools (screenshot, comment, console, performance) to testers in " +
+                 "builds Prototir knows. Turn off to use your own button with PrototirSdk.ShowFeedbackScreen.")]
+        [SerializeField] private bool feedbackTools = true;
+
         public string PrototypeSlug => prototypeSlug?.Trim();
+
+        public bool FeedbackTools => feedbackTools;
 
         public string ApiBaseUrl =>
             string.IsNullOrWhiteSpace(apiBaseUrl) ? DefaultApiBaseUrl : apiBaseUrl.Trim();
@@ -77,7 +83,9 @@ namespace Prototir
 
             // The injected slug wins, but everything else the creator set is theirs and is kept:
             // an apiBaseUrl pointing at a local Prototir is the whole reason someone edits this.
-            return Create(injected, asset.apiBaseUrl, asset.deviceLabel);
+            var merged = Create(injected, asset.apiBaseUrl, asset.deviceLabel);
+            merged.feedbackTools = asset.feedbackTools;
+            return merged;
         }
 
         /// <summary>The slug Prototir put in the build at upload.
