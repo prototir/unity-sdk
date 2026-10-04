@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The bundled review runtime (web builds) now draws the feedback button like the Prototir badge,
+  with the Prototir mark, and uses the website's current palette.
+
 ## 0.3.0 - 2026-09-29
 
 - Added **Prototir > Publish to Prototir (Web)** and **(Native)**: build, upload straight to
