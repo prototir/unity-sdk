@@ -9,8 +9,8 @@
   message. Turn it off with **Feedback Tools** in the settings asset or
   `PrototirSdk.FeedbackTools = false`; `PrototirSdk.ConsoleText()` returns the recorded console.
 - The package now depends on Unity's Image Conversion module, used to encode native screenshots.
-- The bundled review runtime (web builds) now draws the feedback button like the Prototir badge,
-  with the Prototir mark, and uses the website's current palette.
+- The bundled review runtime (web builds) now draws the feedback control like the Prototir badge
+  and uses the website's current palette.
 
 ## 0.3.0 - 2026-09-29
 
