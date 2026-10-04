@@ -2,6 +2,12 @@
 
 ## 0.4.0 - 2026-10-04
 
+- **Update check.** The editor looks for a newer SDK once a day (or **Prototir > Check for SDK
+  Updates**) and shows it at the top of **Prototir > Project Setup** with **What's new** and
+  **Update**, which moves the Git install to the new tag. Nothing changes until you press it.
+  Project Setup also flags a Web template copy that is older than the installed SDK.
+- On Prototir, Web builds now run the current review runtime instead of the copy bundled at
+  export, so testers get new tools without the build being exported again.
 - **Feedback & tools** for testers, with nothing to set up: Screenshot, Comment, Console and
   Performance. Web builds get the web SDK's control. Native builds get the same control in the
   bottom-left corner whenever the build knows its prototype: the console is recorded from start,

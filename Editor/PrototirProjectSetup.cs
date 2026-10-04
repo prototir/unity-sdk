@@ -202,6 +202,16 @@ namespace Prototir.Editor
                     PrototirIssueSeverity.Warning,
                     InstallAndSelectWebTemplate));
             }
+            else if (!TemplateMatchesPackage())
+            {
+                // The template is copied into Assets, so updating the SDK does not update it.
+                issues.Add(new PrototirSetupIssue(
+                    "web-template-outdated",
+                    "The Prototir Web template is from an older SDK",
+                    "The copy in Assets/WebGLTemplates/Prototir differs from the one in the installed SDK. Refresh it to get the current version; edits you made to it are replaced.",
+                    PrototirIssueSeverity.Warning,
+                    InstallAndSelectWebTemplate));
+            }
 
             if (PlayerSettings.WebGL.dataCaching)
             {
@@ -267,8 +277,34 @@ namespace Prototir.Editor
             AssetDatabase.SaveAssets();
         }
 
+        private void OnEnable() => PrototirUpdateCheck.Checked += Repaint;
+        private void OnDisable() => PrototirUpdateCheck.Checked -= Repaint;
+
+        private void DrawUpdate()
+        {
+            var available = PrototirUpdateCheck.Available;
+            if (available == null) return;
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField($"Prototir SDK {available} is available", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(
+                PrototirUpdateCheck.CanUpdate
+                    ? $"This project has {PrototirUpdateCheck.Installed}. Update moves it to the new release; Unity then recompiles."
+                    : $"This project has {PrototirUpdateCheck.Installed}, installed as a local copy. Replace it with the {available} release from GitHub.",
+                EditorStyles.wordWrappedLabel);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("What's new")) Application.OpenURL(PrototirUpdateCheck.ChangelogUrl(available));
+            using (new EditorGUI.DisabledScope(!PrototirUpdateCheck.CanUpdate))
+            {
+                if (GUILayout.Button($"Update to {available}")) PrototirUpdateCheck.Update(available);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(6);
+        }
+
         private void OnGUI()
         {
+            DrawUpdate();
             EditorGUILayout.LabelField("Prototir Project Setup", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Building for", EditorStyles.miniBoldLabel);
             var target = Target;
@@ -371,6 +407,17 @@ namespace Prototir.Editor
 
         private static string PrototirTemplateDirectory =>
             Path.Combine(Application.dataPath, "WebGLTemplates", "Prototir");
+
+        private static bool TemplateMatchesPackage()
+        {
+            var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PrototirProjectSetup).Assembly);
+            if (package == null) return true;
+            var source = Path.Combine(package.resolvedPath, "Editor", "WebGLTemplates", "Prototir", "index.html");
+            var copy = Path.Combine(PrototirTemplateDirectory, "index.html");
+            if (!File.Exists(source) || !File.Exists(copy)) return true;
+            // Line endings differ by checkout, not by version.
+            return File.ReadAllText(source).Replace("\r\n", "\n") == File.ReadAllText(copy).Replace("\r\n", "\n");
+        }
 
         private static void InstallAndSelectWebTemplate()
         {
