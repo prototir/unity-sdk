@@ -1,10 +1,12 @@
 # Prototir SDK for Unity
 
-The official Unity integration for prototypes hosted on [Prototir](https://prototir.com). The
-package connects browser and native builds to lifecycle signals, analytics events, scores, and
-feedback. Browser builds also use persistent SDK storage, managed text generation, and screenshot
-feedback. Native builds pair with a tester's account and report over HTTP. Export checks help catch
-unsupported browser settings before upload.
+The official Unity integration for [Prototir](https://prototir.com), where creators publish
+playable prototypes and testers play them and leave feedback. The package connects Web and native
+(Windows, macOS, Linux) builds to lifecycle signals, analytics events, scores and sessions, and gives
+testers **Feedback & tools**: Screenshot, Comment, Console and Performance, with nothing for you to
+write. Web builds also get persistent storage and managed text generation. Native builds pair with
+a tester's account and report over HTTP. Project Setup and export checks catch unsupported settings
+before upload, and **Publish to Prototir** uploads straight from the editor.
 
 ## Compatibility
 
@@ -23,7 +25,8 @@ In Unity Package Manager, choose **Add package from git URL** and use a tagged r
 https://github.com/prototir/unity-sdk.git#v0.4.0
 ```
 
-Pin a tag in production so an SDK update cannot change an existing project unexpectedly.
+A tag keeps the project on one version until you choose to move. The editor checks for a newer
+release once a day: see [Staying up to date](#staying-up-to-date).
 
 After installation:
 
@@ -36,7 +39,7 @@ After installation:
 ## Basic use
 
 Browser builds use the host connection. Native releases must pair before sending sessions or
-text feedback; see [Native builds](#native-builds). Storage and AI in this example
+feedback; see [Native builds](#native-builds). Storage and AI in this example
 are browser features; native calls use local mocks.
 
 ```csharp
@@ -92,52 +95,78 @@ and text feedback after pairing. Outside Web players, SDK storage remains in mem
 requires an explicit local `PrototirSdk.MockAiHandler`; neither is connected to a hosted native
 storage or AI service. Use your own persistent save system for native builds.
 
-## Screenshot feedback
+## Feedback & tools
 
-Add a `PrototirReview` component to a scene to give testers a floating feedback button in Web
-builds. They capture the current view, drop a pin on that screenshot and write a comment.
+Testers get one **Feedback & tools** control, with its tools unfolding inside the same border:
+
+- **Screenshot** captures the frame; the tester places a pin and writes what they mean.
+- **Comment** is a plain comment on the prototype.
+- **Console** is recorded from start. Testers can copy it or attach it to a comment, where it shows
+  collapsed.
+- **Performance** charts frame rate, slowest frame and memory, recorded only while open. A summary
+  can be copied or attached.
+
+A screenshot, log or summary is always sent with a message, never on its own. Comments follow the
+prototype's moderation and comment settings.
+
+### In Web builds
+
+On Prototir the player draws the control and feedback is on with no code. Prototir also replaces
+the runtime the export bundles with the current one, so testers get new tools without the build
+being exported again.
+
+Add a `PrototirReview` component to a scene to capture Unity's own frame for screenshots, pause the
+game while the tester writes, or connect a build you host yourself:
 
 | Field | Meaning |
 | --- | --- |
-| `ProjectId` | Stable identifier. Reviews exported from another project are refused on import. |
+| `ProjectId` | Stable identifier for this prototype's feedback. |
 | `BuildId` | Recorded with the feedback so you know which build a screenshot came from. |
 | `Corner` | `bottom-left` (default), `bottom-right`, `top-left`, or `top-right`. |
-| `Launcher` | `auto` (default) lets Prototir draw the control on its own surfaces; `watermark` always shows the Prototir mark; `host` draws nothing. |
+| `Launcher` | `auto` (default) lets Prototir draw the control on its own surfaces; `host` draws nothing so your own UI opens it. |
 | `Theme` | `auto` (default) follows the player's light/dark preference; `light` or `dark` pins it. |
 | `ApiBase` | Prototir API base URL. With `PrototypeSlug`, lets a build hosted outside Prototir post feedback. |
 | `PrototypeSlug` | The prototype these comments belong to, as it appears in its Prototir URL. |
-| `PauseWhileReviewing` | Sets `Time.timeScale` to zero while the panel is open. |
+| `PauseWhileReviewing` | Sets `Time.timeScale` to zero while a panel is open. |
 | `ReviewVisibilityChanged` | Fires with `true`/`false` so you can pause audio or your own input. |
 
-Inside the Prototir player, Prototir draws **Feedback** in its own control bar and the component
-stays out of the way. Anywhere else it shows the Prototir mark, which opens an icon menu with
-**Screenshot** and **Review files** while offline, or **Screenshot** and **Comments** when
-connected to Prototir. **Open on Prototir** appears when configured. Choosing Screenshot
-captures the frame and opens the focused composer; Review files contains import and export.
-
 Screenshots are taken with `ScreenCapture.CaptureScreenshotAsTexture` after `WaitForEndOfFrame`, so
-they match what the player saw. While the panel is open the component clears
-`WebGLInput.captureAllKeyboardInput`, otherwise the game would swallow the tester's typing.
+they match what the player saw. While a panel is open the component clears
+`WebGLInput.captureAllKeyboardInput`, otherwise the game would swallow the tester's typing. A build
+hosted elsewhere without `ApiBase` and `PrototypeSlug` shows no feedback control, because comments
+would have nowhere to go.
 
-The component is inert outside Web builds and in the Editor. There is nothing to remove for a native
-build, but testers will not see the button there.
+### In native builds
 
-For browser builds hosted elsewhere, `PrototirReview.ApiBase` and `PrototypeSlug` configure the
-browser panel's connection. Without that connection, the browser panel saves review files offline.
+The same control appears in the bottom-left corner of any native build that knows its prototype,
+which it does once uploaded to Prototir. The first post asks the tester to approve the build at
+prototir.com/link; comments then post as that account. Testers can disconnect a build from their
+Prototir account settings.
 
-On Prototir the capture opens one host composer, where the tester places a pin and explicitly posts an ordinary comment. In a Web build you host yourself the panel saves a
-`feedback.prototir-review.json` file that the tester sends you and you reload with **Import review**.
-See the [Web SDK README](https://github.com/prototir/web-sdk#screenshot-feedback) for the file format
-and its limits.
+```csharp
+PrototirSdk.FeedbackTools = false;          // hide it (or untick Feedback Tools in PrototirSettings)
+PrototirSdk.ShowFeedbackScreen();           // the same comment screen, from your own button
+string log = PrototirSdk.ConsoleText();     // what the Console tool has recorded
+await PrototirSdk.SendFeedbackAsync("...");  // post a comment from code
+```
 
-### Text feedback from a native build
+The console records Unity's log, warnings and errors (with the first lines of their stack) from
+start; the performance sampler runs only while its panel is open. The comment screen keeps an
+unfinished comment for the run, opens pairing when needed, and reuses its submission id when a post
+is retried. These are flat desktop overlays, not headset UI: VR projects should hide them and use
+their own interface with the pairing events and `SendFeedbackAsync`.
 
-A native build pairs through a code approved at `prototir.com/link`, receiving authorization for
-one prototype. After approval, call `PrototirSdk.SendFeedbackAsync(text)` from your own comment UI.
-The browser `PrototirReview` screenshot overlay does not run in a native player.
+## Staying up to date
 
-The SDK reuses the pairing until it is revoked or expires. Keep the tester's draft on send failure
-and offer a retry. Testers can disconnect a build from their Prototir account settings.
+The Package Manager does not offer updates for a package installed from a Git URL, so the SDK checks
+itself. Once a day (or with **Prototir > Check for SDK Updates**) the editor looks at this
+repository's release tags. When a newer one exists, **Prototir > Project Setup** shows it with
+**What's new** and **Update**, which moves the project to the new tag; nothing changes until you
+press it. Project Setup also flags a Web template copy in `Assets/WebGLTemplates` that is older than
+the installed SDK.
+
+Web builds on Prototir always run the current feedback runtime. A native build keeps the SDK it was
+built with, so build again after updating to give its testers new tools.
 
 ## Native builds
 
@@ -192,8 +221,9 @@ row rather than counting a play per report. On quit there is no time left to sen
 last report missed is written under `Application.persistentDataPath` and goes out at the next
 launch. That covers the tester playing on a plane as well.
 
-`PrototirSdk.SendFeedbackAsync("...")` posts a comment as the tester who approved the build. No
-session is needed first, because approving the pairing is the stronger signal.
+`PrototirSdk.SendFeedbackAsync("...")` posts a comment as the tester who approved the build, and
+[Feedback & tools](#in-native-builds) gives testers the same without code. No session is needed
+first, because approving the pairing is the stronger signal.
 
 Pairing works in the Editor, so you can build the screen without exporting every time. Reporting
 does not: pressing Play is not a play, and counting it would put your own testing in your own
@@ -256,9 +286,3 @@ Prototir sandbox play test.
 ## License
 
 [MIT](LICENSE.md)
-
-### Simple native feedback
-
-Call `PrototirSdk.ShowFeedbackScreen()` from your game's Feedback button. The desktop screen keeps an unfinished comment during this run, opens browser pairing when needed, and asks the tester to press Post after pairing. Failed requests keep the draft and reuse its submission ID. Comments pass the API's existing text checks.
-
-For custom pause handling, `Prototir.Native.PrototirFeedbackScreen.Show()` returns the screen and exposes `Closed`. These flat desktop overlays are not headset UI; VR projects should use their own interface and the pairing events / `SendFeedbackAsync`. Native screenshots are not provided.

@@ -20,10 +20,24 @@ names are normalized to lowercase and must use letters, numbers, `_`, `.`, `:`, 
 ## Editor and non-Web behavior
 
 No browser symbols are imported outside a real Unity Web player. Native releases report Ready,
-events, scores, sessions, and text feedback after device pairing. The Editor can test pairing but
+events, scores, sessions, and feedback after device pairing. The Editor can test pairing but
 never reports its play as a session. Storage uses an in-memory mock outside Web players, and
 managed AI requires an explicit local `MockAiHandler`. This keeps tests deterministic and prevents an Editor scene
 from accidentally contacting a production service.
+
+## Feedback & tools
+
+Testers get Screenshot, Comment, Console and Performance with no code: on Prototir the player draws
+the control for Web builds, and native builds that know their prototype show it in the bottom-left
+corner. A screenshot or log is always sent with a message. `PrototirSdk.FeedbackTools = false` (or
+**Feedback Tools** in the settings asset) hides it in native builds; `PrototirSdk.ShowFeedbackScreen()`
+opens the comment screen from your own button. Add a `PrototirReview` component to capture Unity's
+own frame for Web screenshots and pause while the tester writes.
+
+## Updates
+
+The editor checks for a newer SDK once a day (or **Prototir > Check for SDK Updates**). **Prototir >
+Project Setup** then offers **What's new** and **Update**; nothing changes until you press it.
 
 ## Pointer lock and Escape
 
